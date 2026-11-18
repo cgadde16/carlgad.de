@@ -1,0 +1,1149 @@
+---
+// Office: canvas Round 29 A, "filing cabinet". A dark cabinet (cover colour of the Tours notebook and
+// the Library bookcase) with one drawer per topic; the open drawer's folders lie on the right, one folder
+// per year (tab = year). A role sits in the year it ended, an ongoing one in the current year. The URL hash
+// names the drawer.
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import { topics, places, roles, type Topic } from '../../data/office';
+import { shelves, rowTones } from '../../data/books';
+
+// Book stack on top of the cabinet (decoration only): the three newest books.
+const stackBooks = shelves.flat().slice(0, 3).reverse();
+const stackTones = rowTones(stackBooks);
+const stack = stackBooks.map((b, i) => ({ ...b, tone: stackTones[i] }));
+
+const allRoles = roles;
+// Ongoing roles count for the current year. The site is static, so this is the year of the build.
+const thisYear = new Date().getFullYear();
+const yearOf = (r: (typeof roles)[number]) => (r.until === 'now' ? thisYear : r.until);
+const years = [...new Set(roles.map(yearOf))]
+  .sort((a, b) => b - a)
+  .map((year) => ({ year, roles: roles.filter((r) => yearOf(r) === year) }));
+const drawers = [
+  { k: 'all', label: 'All files', c: 'var(--ink)', hash: '', n: allRoles.length },
+  ...(Object.keys(topics) as Topic[]).map((k) => ({ k, ...topics[k], n: allRoles.filter((r) => r.k === k).length })),
+];
+---
+
+<Base description="Studies, work, projects and publications, kept in a filing cabinet.">
+  <div class="room">
+    <SiteHeader current="/office/" />
+    <main class="office">
+      <!-- page title for screen readers only; the header already marks Office as current -->
+      <h1 class="visually-hidden">Office</h1>
+      <div class="cabinet-col">
+        <div class="cabinet-pane">
+        <div class="on-top">
+          <!-- a sunflower in a bottle (canvas Round 49, flowers B in the muted palette); decoration; hovering it calls the bee -->
+          <svg class="plant" viewBox="0 0 140 130" aria-hidden="true">
+              <g>
+              <path d="M70 96 C70 70 72 50 74 30" fill="none" stroke="#6f7560" stroke-width="2.2" />
+              <path d="M0 0 C8 -7.8 8 -18.2 0 -26 C-8 -18.2 -8 -7.8 0 0 Z" fill="#a3a68c" stroke="#14171a" stroke-width="1.1" transform="translate(71 70) rotate(-60)" />
+              <path d="M0 0 C7 -6.6 7 -15.4 0 -22 C-7 -15.4 -7 -6.6 0 0 Z" fill="#a3a68c" stroke="#14171a" stroke-width="1.1" transform="translate(72 56) rotate(58)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(0.0 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(25.7 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(51.4 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(77.1 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(102.9 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(128.6 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(154.3 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(180.0 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(205.7 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(231.4 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(257.1 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(282.9 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(308.6 74 28)" />
+              <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(334.3 74 28)" />
+              <circle cx="74" cy="28" r="9" fill="#3b3a36" stroke="#14171a" stroke-width="1.3" />
+              <circle cx="71" cy="25" r="1" fill="#9a9488" />
+              <circle cx="77" cy="30" r="1" fill="#9a9488" />
+              <circle cx="74" cy="32" r="1" fill="#9a9488" />
+              </g>
+              <path d="M65 86 L75 86 L75 96 C75 100 84 102 84 110 L84 130 L56 130 L56 110 C56 102 65 100 65 96 Z" fill="#efe8da" fill-opacity="0.8" stroke="#14171a" stroke-width="1.3" />
+              <path d="M57 116 L83 116 L83 129 L57 129 Z" fill="#cfc5b2" fill-opacity="0.6" />
+              <path d="M60 108 L60 124" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+          </svg>
+          <!-- the bee: waits behind the cabinet; hovering the sunflower calls it out, it flies a loop and sits on the flower -->
+          <span class="bee" aria-hidden="true">
+            <svg viewBox="0 0 18 14">
+              <g class="wings">
+                <ellipse cx="7" cy="4.2" rx="3.6" ry="2.6" />
+                <ellipse cx="10.6" cy="3.8" rx="3.2" ry="2.4" />
+              </g>
+              <ellipse class="body" cx="8.6" cy="9" rx="6" ry="3.9" />
+              <path class="stripes" d="M7 5.4 V12.6 M10.2 5.3 V12.7" />
+              <circle class="head" cx="15.3" cy="8.8" r="2.1" />
+              <path class="sting" d="M2.6 9 L1 9.2" />
+            </svg>
+          </span>
+          <script is:inline>
+            // Like the home page figures: once the bee has come out it stays on the flower for the rest of the visit
+            // (going to other pages and back keeps it there); a reload sends it back behind the cabinet. Put it on
+            // the flower before the first paint, so it doesn't pop in a frame later from the deferred module script.
+            (function () {
+              var bee = document.currentScript.previousElementSibling;
+              var nav = performance.getEntriesByType('navigation')[0];
+              try {
+                if (nav && nav.type === 'reload') sessionStorage.removeItem('bee-here');
+                else if (sessionStorage.getItem('bee-here') === '1') bee.classList.add('here');
+              } catch (e) {}
+            })();
+          </script>
+          <div class="books" aria-hidden="true">
+            <svg viewBox="0 -12 112 64" aria-hidden="true">
+              <rect x="10" y="38" width="94" height="13" rx="1.5" style={`fill:${stack[0].tone}`} />
+              <rect x="4" y="25" width="90" height="13" rx="1.5" style={`fill:${stack[1].tone}`} />
+              <rect x="8" y="9" width="98" height="16" rx="1.5" style={`fill:${stack[2].tone}`} />
+              <rect x="12" y="-3" width="88" height="12" rx="1.5" style={`fill:${stack[0].tone}`} />
+            </svg>
+          </div>
+        </div>
+        <div class="cabinet" role="group" aria-label="Drawers">
+          {
+            drawers.map((d, i) => (
+              <button type="button" class="drawer" data-k={d.k} data-hash={d.hash} data-label={d.label} data-c={d.c} aria-pressed={i === 0 ? 'true' : 'false'}>
+                <span class="label">
+                  <span class="dot" style={`background:${d.c}`} />
+                  {d.label}
+                  <span class="n">{d.n}</span>
+                </span>
+                <span class="handle" aria-hidden="true" />
+              </button>
+            ))
+          }
+          <!-- the CV (canvas Round 49, drawer draft E): a sheet taped to the "All files" drawer, right of its
+               label, opens /office/cv/. A link can't sit inside the drawer <button>, so it is a sibling laid
+               over the drawer that slides with it (see .cv-sheet). viewBox has 10 units above the sheet for the tape. -->
+          <a class="cv-sheet" href="/office/cv/" aria-label="My CV">
+            <svg viewBox="0 -10 62 96" aria-hidden="true">
+              <rect class="paper" x="0.7" y="0.7" width="60.6" height="84.6" />
+              <text x="31" y="38" text-anchor="middle">CV</text>
+              <rect x="9" y="50" width="44" height="1.6" /><rect x="9" y="56" width="39.6" height="1.6" />
+              <rect x="9" y="62" width="44" height="1.6" /><rect x="9" y="68" width="39.6" height="1.6" />
+              <rect x="9" y="74" width="24.2" height="1.6" />
+              <rect class="tape" x="16" y="-6" width="34" height="12" transform="rotate(-8 33 0)" />
+            </svg>
+          </a>
+        </div>
+        <div class="feet" aria-hidden="true"><span /><span /></div>
+        </div>
+      </div>
+
+      <!-- phones and tablets (canvas Round 50, Office A): once the cabinet has scrolled out of view, it folds into
+           this strip at the top of the screen, so a drawer is always one tap away. Hidden from 964px, where the
+           cabinet stays in place. -->
+      <div class="strip" role="group" aria-label="Drawers" data-shown="false">
+        <div class="strip-row">
+          {
+            drawers.map((d, i) => (
+              <button type="button" class="strip-drawer" data-k={d.k} aria-pressed={i === 0 ? 'true' : 'false'}>
+                <span class="dot" style={`background:${d.c}`} />
+                {d.label}
+                <span class="n">{d.n}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="files">
+        <p class="status" aria-live="polite">
+          <span class="dot" style="background:var(--ink)" />
+          <span class="status-text">Drawer: All files · {allRoles.length} entries</span>
+        </p>
+        <div class="folders">
+          {
+            years.map((y) => (
+              <article class="folder" data-ks={[...new Set(y.roles.map((r) => r.k))].join(' ')}>
+                <h2 class="tab">
+                  <span class="year">{y.year}</span>
+                </h2>
+                <div class="pocket">
+                <div class="sheet">
+                  {y.roles.map((r) => (
+                    <div class:list={['role', { extra: r.kick }]} data-k={r.k}>
+                      <span class="kick">
+                        <span class="dot" style={`background:${topics[r.k].c}`} />
+                        {r.kick ?? topics[r.k].label}
+                      </span>
+                      <div class="title-row">
+                        <h3>{r.t}</h3>
+                        <span class="when">{r.when}</span>
+                      </div>
+                      {r.at && <span class="place">{places[r.at]}</span>}
+                      {r.sub && <span class="sub">{r.sub}</span>}
+                      {r.what && (
+                        <p class="what">
+                          {r.what.split(/(\[[^\]]+\]\([^)]+\)|\*[^*]+\*)/).map((part) => {
+                            const italic = (t: string) => {
+                              const m = t.match(/^\*([^*]+)\*$/);
+                              return m ? <em>{m[1]}</em> : t;
+                            };
+                            const a = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                            return a ? <a class="inline-link" href={a[2]}>{italic(a[1])}</a> : italic(part);
+                          })}
+                        </p>
+                      )}
+                      {r.link && <a class="link" href={r.link.href}>{r.link.label}</a>}
+                    </div>
+                  ))}
+                </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </main>
+    <!-- inline, not a module: it must open the drawer named in the URL hash before the first paint
+         (a module runs after it, so a reload of #work showed "All files" for a moment) -->
+    <script is:inline>
+    (() => {
+      const drawers = [...document.querySelectorAll('.drawer')];
+      const roles = [...document.querySelectorAll('.role')];
+      const folders = [...document.querySelectorAll('.folder')];
+      const status = document.querySelector('.status');
+      const stripBox = document.querySelector('.strip');
+      const strip = [...document.querySelectorAll('.strip-drawer')];
+
+      function open(btn, push) {
+        const k = btn.dataset.k;
+        drawers.forEach((d) => d.setAttribute('aria-pressed', String(d === btn)));
+        strip.forEach((s) => s.setAttribute('aria-pressed', String(s.dataset.k === k)));
+        let n = 0;
+        roles.forEach((r) => {
+          const show = k === 'all' || r.dataset.k === k;
+          r.hidden = !show;
+          if (show) n++;
+        });
+        folders.forEach((f) => (f.hidden = k !== 'all' && !f.dataset.ks.split(' ').includes(k)));
+        status.querySelector('.dot').style.background = btn.dataset.c;
+        status.querySelector('.status-text').textContent = `Drawer: ${btn.dataset.label} · ${n} ${n === 1 ? 'entry' : 'entries'}`;
+        if (push) history.replaceState(null, '', btn.dataset.hash ? `#${btn.dataset.hash}` : location.pathname);
+      }
+
+      drawers.forEach((d) => d.addEventListener('click', () => open(d, true)));
+
+      // the strip: shown while the cabinet is above the screen; a tap opens that drawer and goes to the first folder
+      new IntersectionObserver(([e]) => {
+        // gone above the screen (not below it). Not "bottom < 0": the callback fires as the cabinet's bottom crosses
+        // the 72px line, so with normal finger scrolling the bottom is still ~70px down and the strip never showed
+        const shown = !e.isIntersecting && e.boundingClientRect.top < 0;
+        stripBox.dataset.shown = String(shown); // hidden = visibility: hidden, so no taps or focus
+      }, { rootMargin: '-72px 0px 0px 0px' }).observe(document.querySelector('.cabinet')); // under the strip counts as gone
+      strip.forEach((s) =>
+        s.addEventListener('click', () => {
+          open(drawers.find((d) => d.dataset.k === s.dataset.k), true);
+          s.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const y = status.getBoundingClientRect().top + scrollY - stripBox.offsetHeight - 12;
+          scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
+        }),
+      );
+      const fromHash = () => {
+        const h = location.hash.slice(1);
+        const d = drawers.find((x) => x.dataset.hash === h && h) ?? drawers[0];
+        open(d, false);
+      };
+      window.addEventListener('hashchange', fromHash);
+      fromHash();
+    })();
+    </script>
+    <script>
+      // The CV sheet: wind from below keeps it fluttering while hovered/focused (.flutter loops the gust). Classes
+      // instead of :hover, so a gust always plays to the end of its cycle when the pointer leaves, then rests.
+      const cv = document.querySelector<HTMLElement>('.cv-sheet');
+      if (cv) {
+        let over = false;
+        const start = () => {
+          over = true;
+          cv.classList.add('flutter');
+        };
+        const stop = () => (over = false);
+        cv.addEventListener('pointerenter', start);
+        cv.addEventListener('focus', start);
+        cv.addEventListener('pointerleave', stop);
+        cv.addEventListener('blur', stop);
+        cv.addEventListener('animationiteration', () => over || cv.classList.remove('flutter'));
+        // Clicking navigates away with the pointer still on the sheet, so pointerleave never comes; back in the
+        // history (page restored from the back/forward cache) it would flutter for ever. Reset on leave and return.
+        const reset = () => {
+          over = false;
+          cv.classList.remove('flutter', 'gust');
+        };
+        window.addEventListener('pagehide', reset);
+        window.addEventListener('pageshow', (e) => e.persisted && reset());
+        cv.addEventListener('animationend', () => cv.classList.remove('gust'));
+        const gust = () => cv.classList.add('gust');
+        // one gust on its own about a second after the Office opens, once per visit (tab session), so the eye
+        // finds the sheet; also the only hint on touch screens. Not with reduced motion.
+        let seen = false;
+        try {
+          seen = sessionStorage.getItem('cv-gust') === '1';
+          sessionStorage.setItem('cv-gust', '1');
+        } catch {}
+        if (!seen && !matchMedia('(prefers-reduced-motion: reduce)').matches) setTimeout(gust, 1000);
+      }
+      // The bee: the first hover (or tap) on the sunflower calls it out from behind the cabinet; it lands on the
+      // flower and stays there for the visit (sessionStorage 'bee-here', cleared on reload by the inline script by the bee).
+      const plant = document.querySelector('.plant');
+      const bee = document.querySelector('.bee');
+      if (plant && bee) {
+        plant.addEventListener('pointerenter', () => {
+          if (bee.classList.contains('here')) return;
+          bee.classList.add('come');
+          // from now on it stays on the flower for this visit (until a reload)
+          try {
+            sessionStorage.setItem('bee-here', '1');
+          } catch {}
+        });
+        bee.addEventListener('animationend', (e) => {
+          if ((e as AnimationEvent).animationName.startsWith('bee-fly')) bee.classList.add('sat');
+        });
+      }
+    </script>
+  </div>
+</Base>
+
+<style>
+  .room {
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #ddd3c0;
+  }
+  .office {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px clamp(16px, 3vw, 40px) 80px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px 64px;
+    align-items: flex-start;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---- the cabinet ---- */
+  .cabinet-col {
+    flex: 0 0 300px;
+    max-width: calc(100% - 24px); /* room for the open drawer sliding out */
+    /* short windows: the column sticks near the top while the folders run on */
+    position: sticky;
+    top: 24px;
+  }
+  /* Wide screens: everything left of the line between cabinet and folders stays put, not a pixel of
+     movement; only the right side (nav, heading, folders) scrolls. Fixed with no offsets = the element
+     stays at its place in the layout, so nothing has to be measured. */
+  @media (min-width: 964px) {
+    :global(.site-header nav) {
+      margin-left: auto; /* the nav keeps its place on the right while the home mark is fixed */
+    }
+    :global(.site-header .home) {
+      position: fixed;
+      z-index: 1;
+    }
+    .cabinet-col {
+      position: static;
+    }
+    .cabinet-pane {
+      position: fixed;
+      width: 300px;
+      /* vertically centred on the screen (2026-11-17); left stays at its place in the layout (no left offset) */
+      top: 50%;
+      translate: 0 -50%;
+    }
+  }
+  /* shorter windows: lower drawers, so the fixed cabinet still fits on screen */
+  @media (min-width: 964px) and (max-height: 859px) {
+    .cabinet .drawer {
+      height: 64px;
+      gap: 9px;
+    }
+    .cabinet .cv-sheet {
+      width: 38px; /* smaller sheet for the 64px drawers */
+      top: 12px;
+    }
+  }
+  /* very short windows: the cabinet can't fit, so it sticks near the top as before (the home mark stays fixed) */
+  @media (min-width: 964px) and (max-height: 699px) {
+    .cabinet-col {
+      position: sticky;
+    }
+    .cabinet-pane {
+      position: static;
+      translate: none;
+    }
+    .cabinet-col .on-top {
+      min-height: 130px; /* sticky at top 24px: room for the sunflower, so it isn't cut off at the top */
+    }
+  }
+  .on-top {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0 18px;
+  }
+  /* The sunflower stands on the top left of the cabinet, left of the books. Out of the flow: it is 130px tall
+     against the 64px book stack, and growing .on-top would push the fixed cabinet down (its fit on short
+     screens is measured from the books). Where the page stacks, .on-top gets the height instead (below). */
+  .plant {
+    position: absolute;
+    left: 26px;
+    bottom: 0;
+    width: 140px;
+    height: auto;
+    overflow: visible;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  /* ---- the bee ---- */
+  /* Anchored at the bottom left of .on-top (= the cabinet's top left corner) and moved by translate. It starts
+     behind the cabinet (the cabinet is z-index 1, the bee comes after the sunflower, so it flies in front of it).
+     Landing spot: the upper petals of the flower (its disc is at x 100, 102px above the cabinet top); the bee is 18 x 14. */
+  .bee {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 18px;
+    pointer-events: none;
+    transform: translate(16px, 36px) scaleX(-1); /* hidden just behind the left edge */
+  }
+  .bee svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    stroke: var(--ink);
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .bee .wings {
+    fill: #fff;
+    fill-opacity: 0.75;
+    stroke-width: 0.8;
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+  }
+  .bee .body {
+    fill: #d8c9a0;
+    stroke-width: 1;
+  }
+  .bee .stripes {
+    stroke: #3b3a36;
+    stroke-width: 1.6;
+  }
+  .bee .head {
+    fill: #3b3a36;
+    stroke-width: 1;
+  }
+  .bee .sting {
+    stroke-width: 1;
+  }
+  /* it already came out this visit: sitting, wings still */
+  .bee.here {
+    transform: translate(97px, -110px) scaleX(-1);
+  }
+  .bee.come {
+    animation: bee-fly 5s linear forwards;
+  }
+  /* wings buzz while flying, rest once it sits */
+  .bee.come:not(.sat) .wings {
+    animation: bee-flap 70ms linear infinite alternate;
+  }
+  @keyframes bee-flap {
+    to {
+      transform: scaleY(0.35);
+    }
+  }
+  /* Out from behind the cabinet's left side, up along it, a loop over the flower, a turn, and down onto the disc.
+     Generated from a smooth curve (eased as a whole: quick start so it shows at once, soft landing; a small hover bob; turns pass
+     through scaleX 0), so the timing between keyframes is linear. */
+  @keyframes bee-fly {
+    0.00% {
+      transform: translate(16.0px, 36.0px) scaleX(-1.00);
+    }
+    1.39% {
+      transform: translate(4.5px, 35.6px) scaleX(-1.00);
+    }
+    2.78% {
+      transform: translate(-6.8px, 34.5px) scaleX(-1.00);
+    }
+    4.17% {
+      transform: translate(-17.8px, 34.7px) scaleX(-1.00);
+    }
+    5.56% {
+      transform: translate(-28.4px, 31.1px) scaleX(-1.00);
+    }
+    6.94% {
+      transform: translate(-36.8px, 23.2px) scaleX(-1.00);
+    }
+    8.33% {
+      transform: translate(-43.7px, 14.0px) scaleX(-1.00);
+    }
+    9.72% {
+      transform: translate(-48.9px, 4.2px) scaleX(-1.00);
+    }
+    11.11% {
+      transform: translate(-52.5px, -5.5px) scaleX(-1.00);
+    }
+    12.50% {
+      transform: translate(-54.4px, -14.8px) scaleX(-0.60);
+    }
+    13.89% {
+      transform: translate(-54.9px, -23.5px) scaleX(-0.20);
+    }
+    15.28% {
+      transform: translate(-54.1px, -31.9px) scaleX(0.20);
+    }
+    16.67% {
+      transform: translate(-52.2px, -40.3px) scaleX(0.60);
+    }
+    18.06% {
+      transform: translate(-49.2px, -48.8px) scaleX(1.00);
+    }
+    19.44% {
+      transform: translate(-45.3px, -57.5px) scaleX(1.00);
+    }
+    20.83% {
+      transform: translate(-40.6px, -66.0px) scaleX(1.00);
+    }
+    22.22% {
+      transform: translate(-35.5px, -74.2px) scaleX(1.00);
+    }
+    23.61% {
+      transform: translate(-30.3px, -81.9px) scaleX(1.00);
+    }
+    25.00% {
+      transform: translate(-25.1px, -88.7px) scaleX(1.00);
+    }
+    26.39% {
+      transform: translate(-19.8px, -94.5px) scaleX(1.00);
+    }
+    27.78% {
+      transform: translate(-14.4px, -99.5px) scaleX(1.00);
+    }
+    29.17% {
+      transform: translate(-9.0px, -104.0px) scaleX(1.00);
+    }
+    30.56% {
+      transform: translate(-3.5px, -108.4px) scaleX(1.00);
+    }
+    31.94% {
+      transform: translate(2.1px, -112.9px) scaleX(1.00);
+    }
+    33.33% {
+      transform: translate(7.8px, -117.6px) scaleX(1.00);
+    }
+    34.72% {
+      transform: translate(13.5px, -122.5px) scaleX(1.00);
+    }
+    36.11% {
+      transform: translate(19.3px, -127.3px) scaleX(1.00);
+    }
+    37.50% {
+      transform: translate(25.2px, -131.5px) scaleX(1.00);
+    }
+    38.89% {
+      transform: translate(31.0px, -134.8px) scaleX(1.00);
+    }
+    40.28% {
+      transform: translate(36.9px, -137.1px) scaleX(1.00);
+    }
+    41.67% {
+      transform: translate(42.8px, -138.3px) scaleX(1.00);
+    }
+    43.06% {
+      transform: translate(48.7px, -138.7px) scaleX(1.00);
+    }
+    44.44% {
+      transform: translate(54.4px, -138.7px) scaleX(1.00);
+    }
+    45.83% {
+      transform: translate(60.1px, -138.6px) scaleX(1.00);
+    }
+    47.22% {
+      transform: translate(65.6px, -138.5px) scaleX(1.00);
+    }
+    48.61% {
+      transform: translate(70.9px, -138.6px) scaleX(1.00);
+    }
+    50.00% {
+      transform: translate(76.0px, -138.8px) scaleX(1.00);
+    }
+    51.39% {
+      transform: translate(80.9px, -138.8px) scaleX(1.00);
+    }
+    52.78% {
+      transform: translate(85.6px, -138.3px) scaleX(1.00);
+    }
+    54.17% {
+      transform: translate(90.1px, -137.1px) scaleX(1.00);
+    }
+    55.56% {
+      transform: translate(94.4px, -135.2px) scaleX(1.00);
+    }
+    56.94% {
+      transform: translate(98.4px, -133.0px) scaleX(1.00);
+    }
+    58.33% {
+      transform: translate(102.2px, -130.5px) scaleX(1.00);
+    }
+    59.72% {
+      transform: translate(105.7px, -128.1px) scaleX(1.00);
+    }
+    61.11% {
+      transform: translate(109.0px, -126.0px) scaleX(1.00);
+    }
+    62.50% {
+      transform: translate(111.9px, -124.1px) scaleX(1.00);
+    }
+    63.89% {
+      transform: translate(114.4px, -122.4px) scaleX(1.00);
+    }
+    65.28% {
+      transform: translate(116.5px, -120.4px) scaleX(1.00);
+    }
+    66.67% {
+      transform: translate(118.0px, -118.1px) scaleX(0.60);
+    }
+    68.06% {
+      transform: translate(118.7px, -115.3px) scaleX(0.20);
+    }
+    69.44% {
+      transform: translate(118.6px, -112.1px) scaleX(-0.20);
+    }
+    70.83% {
+      transform: translate(117.8px, -109.0px) scaleX(-0.60);
+    }
+    72.22% {
+      transform: translate(116.4px, -106.2px) scaleX(-1.00);
+    }
+    73.61% {
+      transform: translate(114.8px, -103.9px) scaleX(-1.00);
+    }
+    75.00% {
+      transform: translate(112.9px, -102.5px) scaleX(-1.00);
+    }
+    76.39% {
+      transform: translate(110.9px, -102.2px) scaleX(-1.00);
+    }
+    77.78% {
+      transform: translate(108.9px, -102.7px) scaleX(-1.00);
+    }
+    79.17% {
+      transform: translate(107.1px, -103.7px) scaleX(-1.00);
+    }
+    80.56% {
+      transform: translate(105.6px, -104.8px) scaleX(-1.00);
+    }
+    81.94% {
+      transform: translate(104.2px, -105.7px) scaleX(-1.00);
+    }
+    83.33% {
+      transform: translate(103.0px, -106.3px) scaleX(-1.00);
+    }
+    84.72% {
+      transform: translate(101.9px, -106.6px) scaleX(-1.00);
+    }
+    86.11% {
+      transform: translate(100.9px, -106.9px) scaleX(-1.00);
+    }
+    87.50% {
+      transform: translate(100.1px, -107.2px) scaleX(-1.00);
+    }
+    88.89% {
+      transform: translate(99.4px, -107.6px) scaleX(-1.00);
+    }
+    90.28% {
+      transform: translate(98.8px, -108.2px) scaleX(-1.00);
+    }
+    91.67% {
+      transform: translate(98.3px, -108.8px) scaleX(-1.00);
+    }
+    93.06% {
+      transform: translate(97.9px, -109.4px) scaleX(-1.00);
+    }
+    94.44% {
+      transform: translate(97.5px, -109.9px) scaleX(-1.00);
+    }
+    95.83% {
+      transform: translate(97.3px, -110.1px) scaleX(-1.00);
+    }
+    97.22% {
+      transform: translate(97.1px, -110.2px) scaleX(-1.00);
+    }
+    98.61% {
+      transform: translate(97.0px, -110.1px) scaleX(-1.00);
+    }
+    100.00% {
+      transform: translate(97.0px, -110.0px) scaleX(-1.00);
+    }
+  }
+
+
+
+  /* ---- the CV taped to the "All files" drawer ---- */
+  .cabinet {
+    position: relative;
+    z-index: 1; /* above the bee waiting behind it */
+  }
+  /* Placed over the closed "All files" drawer (cabinet padding 12px, drawer 276px wide): the sheet's right
+     edge 14px inside the drawer's, its top 11px below the drawer's top (the svg starts 8px higher, room for
+     the tape). Kept clear of the centred label and of the drawer below. */
+  .cv-sheet {
+    position: absolute;
+    top: 15px;
+    right: 26px;
+    width: 50px;
+    transform: rotate(-4deg);
+    transform-origin: 50% 10.42%; /* the sheet's top edge, where the tape is */
+    transition: transform 320ms ease; /* same slide as the drawers */
+  }
+  /* it slides out and back in with its drawer */
+  .drawer[data-k='all'][aria-pressed='true'] ~ .cv-sheet {
+    transform: translateX(24px) rotate(-4deg);
+  }
+  .cv-sheet svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    fill: #9a9488;
+    filter: drop-shadow(2px 4px 3px rgba(20, 23, 26, 0.38));
+    transform-origin: 50% 10.42%;
+  }
+  .cv-sheet .tape {
+    fill: #e9dfb4;
+    opacity: 0.85;
+  }
+  /* a gust from below: the free bottom edge lifts towards you (rotateX around the taped top), flutters, settles */
+  .cv-sheet.gust svg {
+    animation: cv-gust 1.3s ease-in-out;
+  }
+  .cv-sheet.flutter svg {
+    animation: cv-gust 1.3s ease-in-out infinite; /* same name: taking over a running gust doesn't restart it */
+  }
+  @keyframes cv-gust {
+    0% {
+      transform: perspective(240px) rotateX(0deg) rotateZ(0deg);
+    }
+    14% {
+      transform: perspective(240px) rotateX(50deg) rotateZ(3deg);
+    }
+    30% {
+      transform: perspective(240px) rotateX(16deg) rotateZ(-2deg);
+    }
+    46% {
+      transform: perspective(240px) rotateX(32deg) rotateZ(1.5deg);
+    }
+    64% {
+      transform: perspective(240px) rotateX(7deg) rotateZ(-1deg);
+    }
+    80% {
+      transform: perspective(240px) rotateX(12deg) rotateZ(0.5deg);
+    }
+    100% {
+      transform: perspective(240px) rotateX(0deg) rotateZ(0deg);
+    }
+  }
+  /* pure white, so the sheet stands off the cream drawer instead of blending into it */
+  .cv-sheet .paper {
+    fill: #fff;
+    stroke: var(--ink);
+    stroke-width: 1.3;
+  }
+  /* big "CV" across the top half, readable at a glance; the serif has one weight, so a thin stroke thickens it */
+  .cv-sheet text {
+    fill: var(--ink);
+    stroke: var(--ink);
+    stroke-width: 0.8;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 34px;
+  }
+  .books {
+    width: 112px;
+  }
+  .books svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .books rect {
+    stroke: var(--ink);
+    stroke-width: 1.4;
+  }
+  .cabinet {
+    background: #3b3a36;
+    border-radius: 6px 6px 2px 2px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 34px 56px -26px rgba(20, 23, 26, 0.6);
+  }
+  .drawer {
+    height: 86px;
+    width: 100%;
+    padding: 0;
+    font: inherit;
+    color: var(--ink);
+    background: #efe8da;
+    border: 1.4px solid var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition:
+      transform 320ms ease,
+      box-shadow 320ms ease,
+      background-color 320ms ease;
+  }
+  .drawer:hover {
+    background: #f3eee4;
+  }
+  .drawer[aria-pressed='true'] {
+    background: #fbf8f1;
+    transform: translateX(24px);
+    box-shadow: 10px 12px 16px -10px rgba(20, 23, 26, 0.55);
+  }
+  .label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.2px solid var(--ink);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .label .n {
+    letter-spacing: 0;
+    color: var(--ink-soft);
+  }
+  .handle {
+    width: 70px;
+    height: 10px;
+    border: 1.4px solid var(--ink);
+    border-radius: 6px;
+    background: #cfc5b2;
+  }
+  .feet {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .feet span {
+    width: 26px;
+    height: 10px;
+    background: #3b3a36;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  /* ---- the open drawer's folders ---- */
+  .files {
+    flex: 1 1 520px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .status {
+    margin: 6px 0 0;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .folders {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: -9px; /* the tabs reach up towards the drawer label */
+  }
+  /* Tab and pocket are siblings in normal flow, so both start at the same x. (The tab used to be
+     absolutely placed at left: -1.4px, but browsers round the 1.4px border to whole device pixels,
+     so on scaled screens the tab stood a pixel off the folder's edge.) */
+  .folder {
+    position: relative;
+  }
+  .pocket {
+    background: #efe8da;
+    border: 1.4px solid var(--ink);
+    border-radius: 0 8px 8px 8px;
+    padding: 10px;
+    box-shadow: 0 16px 24px -18px rgba(20, 23, 26, 0.55);
+  }
+  .folder[hidden] {
+    display: none;
+  }
+  .tab {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    height: 30px;
+    max-width: 85%;
+    margin: 0;
+    padding: 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: #efe8da;
+    border: 1.4px solid var(--ink);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow-x: clip;
+  }
+  /* hides the pocket's top border under the tab, between the tab's own side borders */
+  .tab::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 2px;
+    background: #efe8da;
+  }
+  .tab .year {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 19px;
+  }
+  .sheet {
+    background: #fbf8f1;
+    border: 1px solid var(--ridge-front);
+    border-radius: 2px;
+    padding: 18px 22px 20px;
+  }
+  /* institution (or journal) under the title */
+  .place,
+  .sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .role {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .role[hidden] {
+    display: none;
+  }
+  /* a year holds roles from different places: a hairline between all roles that are shown */
+  .role:not([hidden]) ~ .role:not([hidden]) {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--ridge-front);
+  }
+  .kick {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 2px;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .role h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  /* title on the left, date on the right; a long title wraps beside the date. On phones the date
+     drops under the title when both don't fit on one line. */
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 16px;
+  }
+  .title-row h3 {
+    min-width: 0;
+  }
+  .title-row .when {
+    flex: none;
+    white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .title-row {
+      flex-wrap: wrap;
+    }
+  }
+  .role.extra h3 {
+    font-size: 15px;
+  }
+  .inline-link {
+    color: inherit;
+  }
+  .when {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .what {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .link {
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  /* stacked (cabinet no longer beside the folders): the cabinet first, then the status line and the folders */
+  @media (max-width: 963px) {
+    .cabinet-col {
+      position: static;
+      order: 1;
+      margin-inline: auto; /* alone on its row: centred (user, 2026-11-18) */
+    }
+    .cabinet-col .on-top {
+      min-height: 130px; /* stacked: the sunflower must not reach into the heading above */
+    }
+    .files {
+      display: contents;
+    }
+    .status,
+    .folders {
+      order: 2;
+      flex: 1 1 100%;
+    }
+    .status {
+      margin: 0 0 -24px; /* sit closer to the folders despite the row gap */
+    }
+  }
+  @media (max-width: 700px) {
+    .office {
+      gap: 32px;
+    }
+    .status {
+      margin-bottom: -6px;
+    }
+    .drawer {
+      height: 64px;
+      gap: 9px;
+    }
+    .cabinet .cv-sheet {
+      width: 38px;
+      top: 12px;
+    }
+  }
+  /* the drawer strip (narrow screens only): the cabinet's dark frame with small drawer fronts in one row,
+     scrolling sideways if they don't fit; it slides down from the top edge */
+  .strip {
+    display: none;
+  }
+  @media (max-width: 963px) {
+    .strip {
+      display: block;
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #3b3a36;
+      box-shadow: 0 14px 22px -14px rgba(20, 23, 26, 0.6);
+      transform: translateY(-110%);
+      visibility: hidden;
+      transition:
+        transform 260ms ease,
+        visibility 0s 260ms;
+    }
+    .strip[data-shown='true'] {
+      transform: none;
+      visibility: visible;
+      transition: transform 260ms ease;
+    }
+    .strip-row {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .strip-row::-webkit-scrollbar {
+      display: none;
+    }
+    .strip-drawer {
+      flex: none;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: var(--ink);
+      background: #efe8da;
+      border: 1.4px solid var(--ink);
+      border-radius: 3px;
+      cursor: pointer;
+      transition:
+        transform 200ms ease,
+        background-color 200ms ease,
+        box-shadow 200ms ease;
+    }
+    .strip-drawer .n {
+      letter-spacing: 0;
+      color: var(--ink-soft);
+    }
+    /* the open drawer is pulled out a little, as in the cabinet */
+    .strip-drawer[aria-pressed='true'] {
+      background: #fbf8f1;
+      transform: translateY(3px);
+      box-shadow: 0 8px 12px -8px rgba(20, 23, 26, 0.6);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .strip,
+    .strip[data-shown='true'],
+    .strip-drawer {
+      transition: none;
+    }
+    .drawer,
+    .cv-sheet {
+      transition: none;
+    }
+    .cabinet-col .bee.come {
+      animation: none;
+      transform: translate(97px, -110px) scaleX(-1); /* it is simply there */
+    }
+    .cabinet .cv-sheet.gust svg,
+    .cabinet .cv-sheet.flutter svg {
+      animation: none;
+    }
+  }
+</style>

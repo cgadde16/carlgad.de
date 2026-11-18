@@ -1,0 +1,484 @@
+---
+// The Tours notebook: an overview spread (all tours on the map, activity stamps, km total) and a
+// second spread that is still free ("To do"). Pages are leaves that turn in 3D
+// (src/scripts/notebook.ts). The one leaf carries the overview's right page on its front and the
+// free spread's left page on its back; the overview's left page and the free right page lie on the cover.
+// Below 960px the pages simply stack in reading order.
+import { activities, activityOrder, upcoming, nextUp, type Activity } from '../../data/tours';
+import { resolvedTours } from '../../lib/tours';
+import ActivityIcon from './ActivityIcon.astro';
+import BaseMapDefs from './BaseMapDefs.astro';
+import TourMap from './TourMap.astro';
+import fitSrc from '../../scripts/tourmap-fit.js?raw';
+
+const tours = resolvedTours;
+const fmt = (n: number) => n.toLocaleString('en-US');
+const totalKm = tours.reduce((s, t) => s + t.km, 0);
+const kmBy = Object.fromEntries(activityOrder.map((a) => [a, tours.filter((t) => t.activity === a).reduce((s, t) => s + t.km, 0)]));
+const used = activityOrder.filter((a) => tours.some((t) => t.activity === a) || upcoming[a]);
+// No tours yet: the upcoming line instead of the km. Still a filter button like the others (0 km), so it greys out
+// on click too (user: odd if one stamp doesn't react).
+const isSoon = (a: Activity) => !tours.some((t) => t.activity === a);
+const spreadIds = ['overview', 'todo'];
+---
+
+<BaseMapDefs />
+
+<!-- hide the notebook while it is parsed; the script after it sets the start state and shows it (JS only) -->
+<script is:inline>document.documentElement.classList.add('nb-pending');</script>
+
+<!-- data-turning="off": page turning disabled for now; remove the attribute to turn it back on -->
+<div class="notebook" data-notebook data-turning="off" data-spreads={JSON.stringify(spreadIds)}>
+  <div class="nb-book">
+    <!-- overview, left page: every tour on one map -->
+    <section class="nb-page nb-left nb-base" aria-label="Map of all tours">
+      <div class="nb-mapbox">
+        <TourMap tours={tours} variant="overview" label="Map of Europe with all tours, coloured by activity" class="nb-overview-map" />
+        <span class="tape tape-tl" aria-hidden="true"></span>
+        <span class="tape tape-tr" aria-hidden="true"></span>
+        <span class="tape tape-bl" aria-hidden="true"></span>
+        <span class="tape tape-br" aria-hidden="true"></span>
+      </div>
+    </section>
+
+    <div class="nb-leaves">
+      <div class="nb-leaf" data-leaf="0" style="z-index: 1">
+        <section class="nb-face nb-front nb-right" id="page-overview" aria-label="Overview">
+          <div class="nb-overview">
+            <header class="nb-head">
+              <h1>Tour book</h1>
+              <p class="nb-tagline">Every tour so far, by motorbike, bike, on foot and on skis. Each stamp switches its tours on or off.</p>
+            </header>
+            <div class="nb-stamps" role="group" aria-label="Show or hide tours by activity">
+              {used.map((a, k) => (
+                <button type="button" class:list={['stamp', { 'stamp-soon': isSoon(a) }]} data-activity={a} data-km={kmBy[a]} aria-pressed="true" style={`--c: ${activities[a].color}; --r: ${[-3, 2, 1.5, -2][k % 4]}deg`}>
+                  <span class="stamp-in">
+                    <ActivityIcon name={activities[a].icon} size={72} />
+                    <span class="stamp-label">{activities[a].label}</span>
+                    <span class="stamp-km">{isSoon(a) ? upcoming[a] : `${fmt(kmBy[a])} km`}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p class="nb-total">
+              <span data-total>{fmt(totalKm)}</span> km so far
+            </p>
+            {nextUp.text.length > 0 && (
+              <p class="nb-total nb-next">next up: <span class="nb-next-lines">{nextUp.text.map((line) => <b>{line}</b>)}</span></p>
+            )}
+          </div>
+          <button type="button" class="nb-corner nb-corner-next" data-turn="next" aria-label="Next page"></button>
+        </section>
+        <section class="nb-face nb-back nb-left nb-todo" id="page-todo" aria-label="To do">
+          <h2>To do</h2>
+          <button type="button" class="nb-corner nb-corner-prev" data-turn="prev" aria-label="Previous page"></button>
+        </section>
+      </div>
+    </div>
+
+    <!-- free spread, right page: on the back cover, left blank for now -->
+    <section class="nb-page nb-right nb-base nb-blank" aria-hidden="true"></section>
+  </div>
+</div>
+
+<!--
+  Before the first paint (the module scripts only run after it): open the spread named in the URL hash
+  and fit every map to its routes, so a reload doesn't flash the overview / the whole of Europe.
+  notebook.ts and tourmap.ts take over from this state.
+-->
+<script is:inline set:html={`(() => {
+${fitSrc.replace(/^export /gm, '')}
+const nb = document.querySelector('[data-notebook]');
+if (!nb) return;
+try {
+  const ids = JSON.parse(nb.dataset.spreads || '[]');
+  let k = 0;
+  if (nb.dataset.turning !== 'off') try { k = Math.max(0, ids.indexOf(decodeURIComponent(location.hash.slice(1)))); } catch {}
+  const leaves = nb.querySelectorAll('.nb-leaf');
+  nb.classList.add('no-anim');
+  leaves.forEach((leaf, i) => {
+    leaf.classList.toggle('is-turned', i < k);
+    leaf.style.zIndex = String(i < k ? i + 1 : leaves.length - i);
+  });
+  nb.querySelectorAll('[data-tourmap]').forEach((el) => {
+    const svg = el.querySelector('svg.tm-svg');
+    if (!svg) return;
+    tmSetView(el, svg, tmFitView(el));
+    tmDeclutter(svg);
+  });
+} finally {
+  document.documentElement.classList.remove('nb-pending');
+}
+requestAnimationFrame(() => requestAnimationFrame(() => nb.classList.remove('no-anim')));
+// label widths change once the webfont is in: thin out the labels again
+document.fonts?.ready.then(() => nb.querySelectorAll('svg.tm-svg').forEach((svg) => tmDeclutter(svg)));
+})();`} />
+
+<style>
+  .notebook {
+    --cover: #3b3a36;
+    --paper: #f7f3ea;
+    --turn: 900ms;
+    width: min(1240px, 100%);
+    margin: 0 auto;
+  }
+  /* desktop: the book fills the window, as large as width and height allow (no fixed cap, 2026-11-17)
+     (88px = header + gap above the book, 24px below; 1.56 = the book's aspect ratio). --grow lifts the
+     upper limits of the cqi-sized text below, so the text scales with the book instead of stopping at the
+     sizes of a 1240px book; in the stacked phone/tablet-portrait layout those limits stay. */
+  @media (min-width: 960px) {
+    .notebook {
+      --grow: 100;
+      width: min(100%, max(720px, calc((100svh - 112px) * 1.56)));
+    }
+  }
+
+  /* ---------- the book (desktop): two pages side by side, leaves turn around the spine ---------- */
+  .nb-book {
+    position: relative;
+    aspect-ratio: 1.56;
+    perspective: 2600px;
+    container-type: inline-size;
+    background: var(--cover);
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    box-shadow: 0 34px 56px -26px rgba(20, 23, 26, 0.6);
+  }
+  .nb-page,
+  .nb-leaf {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    width: calc(50% - 10px);
+  }
+  .nb-left.nb-base {
+    left: 10px;
+  }
+  .nb-right.nb-base,
+  .nb-leaf {
+    left: 50%;
+  }
+  .nb-leaf {
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    transition: transform var(--turn) cubic-bezier(0.45, 0.05, 0.25, 1);
+  }
+  .nb-leaf.is-turned {
+    transform: rotateY(-180deg);
+  }
+  .nb-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .nb-back {
+    transform: rotateY(180deg);
+  }
+
+  .nb-page,
+  .nb-face {
+    background-color: var(--paper);
+    container-type: inline-size;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  /* dot grid on the writing pages; shade towards the spine */
+  .nb-right {
+    border-radius: 0 4px 4px 0;
+    background-image:
+      linear-gradient(to right, rgba(20, 23, 26, 0.13), rgba(20, 23, 26, 0) 7%),
+      radial-gradient(circle, rgba(30, 58, 138, 0.16) 1px, transparent 1.3px);
+    background-size: 100% 100%, 22px 22px;
+    padding: 3.4cqi 3.4cqi 2.9cqi 4.2cqi; /* cqi of the book here (a page's own padding can't use its own size) */
+  }
+  .nb-left {
+    border-radius: 4px 0 0 4px;
+    background-image: linear-gradient(to left, rgba(20, 23, 26, 0.13), rgba(20, 23, 26, 0) 7%);
+    padding: 3.4cqi 4.2cqi 4.4cqi 3.4cqi;
+  }
+  /* a turning page darkens a little as it lifts */
+  .nb-face::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(20, 23, 26, 0);
+    transition: background calc(var(--turn) / 2) ease;
+  }
+  .nb-leaf.is-moving .nb-face::after {
+    background: rgba(20, 23, 26, 0.08);
+  }
+
+  /* ---------- map pages ---------- */
+  .nb-mapbox {
+    position: relative;
+    height: 100%;
+    transform: rotate(-0.8deg);
+    box-shadow: 0 1px 3px rgba(20, 23, 26, 0.25);
+  }
+  .tape {
+    position: absolute;
+    width: 15cqi;
+    height: 4.2cqi;
+    background: rgba(226, 210, 168, 0.72);
+    pointer-events: none;
+  }
+  .tape-tl { left: -4.5cqi; top: 1.8cqi; transform: rotate(-38deg); }
+  .tape-tr { right: -4.5cqi; top: 1.8cqi; transform: rotate(38deg); }
+  .tape-bl { left: -4.5cqi; bottom: 1.8cqi; transform: rotate(38deg); }
+  .tape-br { right: -4.5cqi; bottom: 1.8cqi; transform: rotate(-38deg); }
+
+  /* ---------- overview, right page ---------- */
+  .nb-overview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4.5cqi;
+  }
+  /* The free height is shared evenly: header, gap, stamps, gap, total, gap (auto margins do nothing on phones,
+     where the page grows with its content, so the plain gap applies there). */
+  .nb-overview > .nb-stamps,
+  .nb-overview > .nb-total {
+    margin-top: auto;
+  }
+  .nb-overview > .nb-total {
+    margin-bottom: auto;
+  }
+  h1 {
+    text-align: center;
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(44px, 12cqi, calc(76px * var(--grow, 1)));
+    line-height: 1;
+  }
+  .nb-tagline {
+    text-wrap: pretty; /* no lone word on the last line */
+    margin: 2.6cqi 0 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(17px, 3.4cqi, calc(22px * var(--grow, 1)));
+    line-height: 1.3;
+    color: var(--ink-soft);
+  }
+  .nb-stamps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4.6cqi;
+  }
+  .stamp {
+    font: inherit;
+    padding: 5px;
+    background: transparent;
+    border: 2px solid var(--c);
+    border-radius: 6px;
+    color: var(--c);
+    transform: rotate(var(--r, 0deg));
+    opacity: 0.92;
+    transition: color 200ms ease, border-color 200ms ease, opacity 200ms ease, filter 200ms ease;
+  }
+  button.stamp {
+    cursor: pointer;
+  }
+  .stamp-in {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 1.6cqi 1cqi;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+  }
+  .stamp-in :global(svg) {
+    width: clamp(48px, 12cqi, calc(76px * var(--grow, 1)));
+    height: auto;
+  }
+  .stamp-label {
+    font-size: clamp(11px, 2cqi, calc(13px * var(--grow, 1)));
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .stamp-km {
+    font-family: var(--serif);
+    font-size: clamp(16px, 3cqi, calc(19px * var(--grow, 1)));
+  }
+  .stamp-soon .stamp-km {
+    text-align: center;
+  }
+  .stamp:hover {
+    opacity: 1;
+  }
+  /* Off: the inline --c wins over a stylesheet --c, so set the colours directly. */
+  .stamp[aria-pressed='false'] {
+    color: #a39d92;
+    border-color: #a39d92;
+    border-style: dashed;
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+  .stamp[aria-pressed='false']:hover {
+    opacity: 0.7;
+  }
+  .nb-total {
+    margin: 0;
+    text-align: center; /* sits right under the stamps, centred on them */
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(17px, 3.4cqi, calc(22px * var(--grow, 1)));
+  }
+  .nb-total span {
+    font-style: normal;
+    font-size: 1.5em;
+  }
+
+  /* "next up" line: same look as the total, sits at the bottom */
+  /* right under the total, the pair stays centred in the free space below the stamps */
+  .nb-overview > .nb-total:has(+ .nb-next) {
+    margin-bottom: 0;
+  }
+  .nb-overview > .nb-next {
+    margin: 1.2cqi 0 auto;
+    color: var(--ink-soft);
+  }
+  /* the lines stack left-aligned, so the second starts under the first; the block sits on the label's baseline */
+  .nb-next .nb-next-lines {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    font-size: 1.2em;
+  }
+  .nb-next b {
+    font-weight: inherit;
+  }
+
+  /* ---------- free spread ---------- */
+  .nb-todo h2 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(34px, 8.4cqi, calc(54px * var(--grow, 1)));
+    line-height: 1.02;
+    color: var(--ink-soft);
+  }
+
+  /* page turning switched off (data-turning="off"): hide the corners */
+  [data-turning='off'] .nb-corner {
+    display: none;
+  }
+  /* ...and the free "To do" page with it: unreachable on desktop anyway, and on phones (stacked pages) it showed
+     as an empty page under the overview (user, 2026-11-18: remove it). Comes back with page turning. */
+  .notebook[data-turning='off'] .nb-todo {
+    display: none;
+  }
+  /* ---------- dog-eared corners turn the page ---------- */
+  .nb-corner {
+    position: absolute;
+    bottom: 0;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background: transparent;
+  }
+  .nb-corner::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 26px;
+    height: 26px;
+    transition: width 200ms ease, height 200ms ease;
+  }
+  .nb-corner-next {
+    right: 0;
+  }
+  .nb-corner-next::before {
+    right: 0;
+    background: linear-gradient(135deg, #e8e0cf 50%, transparent 50%);
+    box-shadow: -2px -2px 3px rgba(20, 23, 26, 0.12);
+  }
+  .nb-corner-prev {
+    left: 0;
+  }
+  .nb-corner-prev::before {
+    left: 0;
+    background: linear-gradient(225deg, #e8e0cf 50%, transparent 50%);
+    box-shadow: 2px -2px 3px rgba(20, 23, 26, 0.12);
+  }
+  .nb-corner:hover::before,
+  .nb-corner:focus-visible::before {
+    width: 40px;
+    height: 40px;
+  }
+  .nb-corner:focus-visible {
+    outline-offset: -4px;
+  }
+
+
+  :global(html.nb-pending) .notebook {
+    visibility: hidden;
+  }
+  .notebook.no-anim .nb-leaf {
+    transition: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nb-leaf {
+      transition: none;
+    }
+  }
+
+  /* ---------- narrow screens: no turning, the pages stack in reading order ---------- */
+  @media (max-width: 959px) {
+    .nb-book {
+      aspect-ratio: auto;
+      perspective: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .nb-leaves,
+    .nb-leaf {
+      display: contents;
+    }
+    .notebook .nb-page,
+    .notebook .nb-face {
+      position: relative;
+      inset: auto;
+      top: auto;
+      left: auto;
+      width: 100%;
+      transform: none;
+      border-radius: 4px;
+      backface-visibility: visible;
+    }
+    .nb-left {
+      aspect-ratio: 0.85;
+    }
+    .nb-right {
+      padding-bottom: 64px;
+    }
+    .nb-left.nb-todo {
+      aspect-ratio: auto;
+      min-height: 220px;
+    }
+    .nb-blank {
+      display: none;
+    }
+    .nb-overview {
+      height: auto;
+    }
+    .nb-corner {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { initNotebook } from '../../scripts/notebook';
+  initNotebook();
+</script>

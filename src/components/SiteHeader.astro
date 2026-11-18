@@ -1,0 +1,76 @@
+---
+// Header for the subpages: name back to the home page, then the same sections as the signpost.
+import { person, signs } from '../data/site';
+
+interface Props {
+  /** href of the current section, e.g. '/tours/'. */
+  current: string;
+}
+
+const { current } = Astro.props;
+---
+
+<header class="site-header">
+  <a class="home" href="/" aria-label={`${person.name}, home`}>
+    <!-- a small house on top of the home-page ridge line (canvas Round 33, house draft D); the window lights on hover -->
+    <svg width="54" height="31" viewBox="0 0 60 34" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 31 L13 20 L21 25 L34 13 L46 23 L59 31" />
+        <path d="M28 13 L34 6.5 L40 13" />
+        <rect x="29.5" y="11" width="9" height="7" fill="#fbf8f1" />
+        <rect class="win" x="32.5" y="13" width="3" height="3" fill="#fbf8f1" stroke-width="1" />
+      </g>
+    </svg>
+  </a>
+  <nav aria-label="Sections">
+    {
+      signs.map((s) => (
+        <a href={s.href} aria-current={s.href === current ? 'page' : undefined}>
+          {s.label}
+        </a>
+      ))
+    }
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    position: relative;
+    /* full width: the house mark at the far left, the section names at the far right (2026-11-17) */
+    box-sizing: border-box;
+    padding: 18px clamp(16px, 3vw, 40px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 24px;
+  }
+  .home {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 4px 0;
+    color: var(--ink);
+  }
+  .win {
+    transition: fill 300ms ease;
+  }
+  .home:hover .win,
+  .home:focus-visible .win {
+    fill: #f3d27a;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+    font-size: 15px;
+  }
+  nav a {
+    text-decoration: none;
+    padding: 12px 0;
+  }
+  nav a[aria-current='page'] {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+</style>

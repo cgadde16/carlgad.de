@@ -1,0 +1,147 @@
+---
+// A single post with outlined arrow plates. Each plate shows a place name; on hover
+// or keyboard focus the arrow reaches a little further, the name lifts and a short
+// description fades in underneath. The post and the plates' left edges never move.
+// Placed and sized in scene units (--u, --sw from .home in index.astro).
+import type { Sign } from '../data/site';
+
+interface Props {
+  signs: Sign[];
+}
+
+const { signs } = Astro.props;
+---
+
+<nav class="post" aria-label="Sections">
+  {
+    signs.map((sign) => (
+      <a class="plate" href={sign.href}>
+        <svg class="shape" viewBox="0 0 210 56" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <path d="M0 1 H192 L209 28 L192 55 H0" />
+        </svg>
+        <span class="label">{sign.label}</span>
+        <span class="detail">{sign.detail}</span>
+      </a>
+    ))
+  }
+</nav>
+
+<style>
+  .post {
+    /* --px: one "reference pixel". The sizes below are the ones from the reference window (scene unit
+       1.761px); the signpost scales with the scene (--u, set on .home in index.astro), but not below 72%
+       so the names stay readable. */
+    --px: max(0.72px, calc(var(--u, 1.761px) / 1.761));
+    --post: 3px;
+    --plate-w: round(calc(210 * var(--px)), 1px);
+    --plate-h: round(calc(56 * var(--px)), 1px);
+    --reach: calc(12 * var(--px)); /* how much further the arrow points on hover */
+    position: absolute;
+    /* The foot stands in the front ridge at scene x 1228, y 661 (as in the reference), so the post stays
+       planted in the ground at any window size. Narrow windows push it left so the plates (and their hover
+       reach) stay on screen. Whole pixels keep the 2px outlines crisp. */
+    left: round(
+      min(
+        calc(var(--sl, 50% - var(--sw) / 2) + 1228 * var(--u)),
+        calc(100% - var(--post) - var(--plate-w) - var(--reach) - max(16px, 2vw))
+      ),
+      1px
+    );
+    bottom: round(calc(149 * var(--u)), 1px);
+    /* Fixed width: a plate reaching further on hover never moves the post. */
+    width: calc(var(--post) + var(--plate-w));
+    border-left: var(--post) solid var(--ink);
+    padding: round(calc(16 * var(--px)), 1px) 0 round(calc(64 * var(--px)), 1px);
+    display: flex;
+    flex-direction: column;
+    gap: round(calc(9 * var(--px)), 1px);
+  }
+
+  .plate {
+    position: relative;
+    display: block;
+    width: var(--plate-w);
+    height: var(--plate-h);
+    text-decoration: none;
+  }
+
+  /* One stroked path per plate, so every edge, the tip included, has the same weight.
+     The path is open on the left, where the plate meets the post. */
+  .shape {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: width 220ms ease;
+  }
+  .shape path {
+    fill: var(--paper);
+    stroke: var(--ink);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .label,
+  .detail {
+    position: absolute;
+    left: calc(14 * var(--px));
+    top: 50%;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .label {
+    font-family: var(--serif);
+    font-size: calc(23 * var(--px));
+    color: var(--ink);
+    transform: translateY(-50%);
+    transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .detail {
+    font-size: max(11px, calc(12 * var(--px)));
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 200ms ease,
+      transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .plate:hover .shape,
+  .plate:focus-visible .shape {
+    width: calc(100% + var(--reach));
+  }
+  .plate:hover .label,
+  .plate:focus-visible .label {
+    transform: translateY(calc(-50% - 9 * var(--px)));
+  }
+  .plate:hover .detail,
+  .plate:focus-visible .detail {
+    opacity: 1;
+    transform: translateY(calc(4 * var(--px)));
+    transition-delay: 60ms;
+  }
+
+  /* Keyboard focus: a heavier outline instead of a rectangle around the arrow. */
+  .plate:focus-visible {
+    outline: none;
+  }
+  .plate:focus-visible .shape path {
+    stroke-width: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shape,
+    .shape path,
+    .label,
+    .detail {
+      transition: none;
+    }
+  }
+</style>

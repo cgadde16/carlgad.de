@@ -1,0 +1,323 @@
+---
+// A zoomable map of some tours on the shared base map (BaseMapDefs must be on the page once).
+// The view fits the visible tours (src/scripts/tourmap.ts); hiding routes and sending 'tourmap:refit'
+// to the element refits it. Markers and labels keep their screen size via the --u variable
+// (base-map units per CSS pixel), strokes via non-scaling-stroke.
+import { activities, activityOrder } from '../../data/tours';
+import { MAP_W, MAP_H, type ResolvedTour } from '../../lib/tours';
+
+interface Props {
+  tours: ResolvedTour[];
+  label: string;
+  /** Show every stop with its name (tour spreads) or only the home marker (overview). */
+  variant: 'overview' | 'tour';
+  class?: string;
+}
+
+const { tours, label, variant, class: cls } = Astro.props;
+const f = (v: number) => Math.round(v * 10) / 10;
+---
+
+<div class:list={['tourmap', cls]} data-tourmap data-variant={variant}>
+  <svg class="tm-svg" viewBox={`0 0 ${MAP_W} ${MAP_H}`} data-frame={`${MAP_W} ${MAP_H}`} role="img" aria-label={label} tabindex="0">
+    <use href="#basemap"></use>
+    {
+      /* One layer per activity: first the light casings of all its routes, then their lines. So routes of
+         the same colour merge where they overlap, and different colours still get a casing between them.
+         The casings mirror their route's is-hidden / is-dot / is-hover (tmSyncCasings). */
+      activityOrder.map((act) => {
+        const group = tours.filter((t) => t.activity === act);
+        if (!group.length) return null;
+        return (
+          <g class="tm-act" data-activity={act}>
+            <g class="tm-casings">
+              {group.map((t) => <path class="tm-casing" data-for={t.id} d={t.d} />)}
+            </g>
+            {group.map((t) => {
+        const a = activities[t.activity];
+        return (
+          <g
+            class="tm-route"
+            data-id={t.id}
+            data-activity={t.activity}
+            data-bbox={t.bbox.map(f).join(' ')}
+            data-title={t.title}
+            data-meta={[t.when, t.duration, `${t.km.toLocaleString('en-US')} km`].filter(Boolean).join(' · ')}
+            style={`--c: ${a.color}`}
+          >
+            <path class="tm-line" d={t.d} style={a.dash ? `stroke-dasharray: ${a.dash}` : undefined} />
+            {t.ferryD && <path class="tm-ferry" d={t.ferryD} />}
+            <path class="tm-hit" d={t.ferryD ? `${t.d} ${t.ferryD}` : t.d} />
+            {variant === 'overview' && (
+              <g class="tm-pin tm-dot" transform={`translate(${f((t.bbox[0] + t.bbox[2]) / 2)} ${f((t.bbox[1] + t.bbox[3]) / 2)})`}>
+                <g class="tm-pin-s">
+                  <circle class="tm-dot-mark" r="5" />
+                  <circle class="tm-hit tm-hit-dot" r="11" />
+                </g>
+              </g>
+            )}
+            {variant === 'tour' &&
+              t.stopsXY.map((p, i) => (
+                <g class="tm-pin" transform={`translate(${f(p.x)} ${f(p.y)})`}>
+                  <g class="tm-pin-s">
+                    <circle class:list={['tm-stop', { 'tm-stop-end': i === 0 || i === t.stopsXY.length - 1 }]} r="4" />
+                    <text class="tm-label" x="7" y={i % 2 ? 15 : -6}>
+                      {p.name}
+                    </text>
+                  </g>
+                </g>
+              ))}
+          </g>
+        );
+            })}
+          </g>
+        );
+      })
+    }
+  </svg>
+  <div class="tm-tip" hidden aria-hidden="true">
+    <span class="tm-tip-dot"></span>
+    <span class="tm-tip-title"></span>
+    <span class="tm-tip-meta"></span>
+  </div>
+  <div class="tm-controls">
+    <button type="button" data-zoom="in" aria-label="Zoom in">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
+    </button>
+    <button type="button" data-zoom="out" aria-label="Zoom out">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" /></svg>
+    </button>
+    <button type="button" data-zoom="fit" aria-label="Show all tours" title="Show all tours">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.8 9.2 3.8 12.2M9.2 6.8l3-3" /><path class="tm-fill" d="M14 2v4.6L9.4 2zM2 14V9.4L6.6 14z" /></svg>
+    </button>
+  </div>
+</div>
+
+<style>
+  .tourmap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #f7f3ea;
+    --u: 1;
+  }
+  .tm-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .tm-svg:active {
+    cursor: grabbing;
+  }
+  .tm-svg:focus-visible {
+    outline: 2px solid #14171a;
+    outline-offset: -2px;
+  }
+
+  .tm-route {
+    transition: opacity 350ms ease;
+  }
+  .tm-route.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tm-casing,
+  .tm-line,
+  .tm-ferry {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .tm-casing {
+    stroke: #fff; /* white outline so the routes stand off the cream map; 2px each side, like the dots' ring */
+    stroke-width: 7.2px;
+    opacity: 1;
+  }
+  .tm-line {
+    stroke: var(--c);
+    stroke-width: 3.2px;
+  }
+  .tourmap[data-variant='tour'] .tm-line {
+    stroke-width: 3.6px;
+  }
+  .tourmap[data-variant='tour'] .tm-casing {
+    stroke-width: 7.6px;
+  }
+  .tm-ferry {
+    stroke: var(--c);
+    stroke-width: 2.4px;
+    stroke-dasharray: 0.1 5;
+  }
+
+  /* Wide invisible stroke so a thin route is easy to hover. */
+  .tm-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 16px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    pointer-events: stroke;
+  }
+  /* A route too small to see at the current zoom is drawn as a dot instead (.is-dot, set in tmSetView). */
+  .tm-dot,
+  .tm-route.is-dot > :is(.tm-casing, .tm-line, .tm-ferry, .tm-hit) {
+    display: none;
+  }
+  .tm-route.is-dot .tm-dot {
+    display: inline;
+  }
+  .tm-dot-mark {
+    fill: var(--c);
+    stroke: #fff;
+    stroke-width: 2px;
+  }
+  .tm-route.is-hover .tm-dot-mark {
+    r: 6.5px;
+  }
+  .tm-hit-dot {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+  }
+  .tourmap.has-hover .tm-route:not(.is-hover):not(.is-hidden) {
+    opacity: 0.3;
+  }
+  .tm-route.is-hover .tm-line {
+    stroke-width: 4.6px;
+  }
+  .tm-casing {
+    transition: opacity 350ms ease;
+  }
+  .tm-casing.is-hidden {
+    opacity: 0;
+  }
+  .tm-casing.is-dot {
+    display: none;
+  }
+  .tourmap.has-hover .tm-casing:not(.is-hover):not(.is-hidden) {
+    opacity: 0.25;
+  }
+  .tm-casing.is-hover {
+    stroke-width: 8.6px;
+    opacity: 1;
+  }
+
+  /* The card always sits in the map's top-left corner (simple and steady; following the pointer hid routes). */
+  .tm-tip {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    column-gap: 8px;
+    row-gap: 1px;
+    max-width: 260px;
+    padding: 7px 11px 8px;
+    background: #f7f3ea;
+    border: 1.5px solid #14171a;
+    box-shadow: 2px 2px 0 rgba(20, 23, 26, 0.12);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .tm-tip[hidden] {
+    display: none;
+  }
+  .tm-tip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--c);
+    transform: translateY(-1px);
+  }
+  .tm-tip-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.2;
+    color: #14171a;
+    white-space: normal;
+  }
+  .tm-tip-meta {
+    grid-column: 2;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--ink-soft, #5b5e60);
+  }
+
+  /* Pins scale with --u so they keep their size on screen while the map zooms. */
+  .tm-pin-s {
+    transform: scale(var(--u));
+  }
+  .tm-stop {
+    fill: var(--c);
+    stroke: #f7f3ea;
+    stroke-width: 1.6px;
+  }
+  .tm-stop.tm-stop-end {
+    fill: #f7f3ea;
+    stroke: var(--c);
+    stroke-width: 2.2px;
+  }
+  .tm-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    fill: #14171a;
+    stroke: #f7f3ea;
+    stroke-width: 3.5px;
+    stroke-linejoin: round;
+    paint-order: stroke;
+  }
+
+  .tm-controls {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    border: 1.5px solid #14171a;
+    background: #f7f3ea;
+  }
+  .tm-controls button {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #14171a;
+    cursor: pointer;
+  }
+  .tm-controls button + button {
+    border-top: 1px solid #d9d1c2;
+  }
+  .tm-controls button:hover {
+    background: #ece5d6;
+  }
+  .tm-controls svg path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .tm-controls svg path.tm-fill {
+    fill: currentColor;
+    stroke: none;
+  }
+</style>
+
+<script>
+  import { initTourMaps } from '../../scripts/tourmap';
+  initTourMaps();
+</script>

@@ -1,0 +1,110 @@
+---
+import Base from '../layouts/Base.astro';
+import MountainScene from '../components/MountainScene.astro';
+import Birds from '../components/Birds.astro';
+import SceneFigures from '../components/SceneFigures.astro';
+import Signpost from '../components/Signpost.astro';
+import SocialLinks from '../components/SocialLinks.astro';
+import { person, signs, socials } from '../data/site';
+---
+
+<Base zoom={false} description={`${person.name}: research, mountain passes and books.`}>
+  <div class="home">
+    <MountainScene />
+    <Birds />
+
+    <main class="title">
+      <h1>{person.name}</h1>
+      <p class="tagline">{person.tagline}</p>
+    </main>
+
+    <!-- after the title so figures are drawn in front of it, before the signpost so they pass behind it -->
+    <SceneFigures />
+
+    <Signpost signs={signs} />
+
+    <SocialLinks socials={socials} />
+  </div>
+</Base>
+
+<style>
+  .home {
+    /* --sw: width of the scene's 1440x810 box, anchored to the bottom centre. It takes the larger size at
+       which (a) the scene from x 70 to 1370 (all figures and the signpost) still fits the width and (b) the
+       scene from y 70 down still fits the height. Past those limits the ridges simply run on (wide windows)
+       or the sky grows (tall windows). Reference look: a 2536x1298 window, where --u is about 1.75px.
+       --u: one scene unit in px. The signpost (Signpost.astro) and the title scale with it. */
+    --sw: min(100vw * 1440 / 1300, 100vh * 1440 / 740);
+    --sw: min(100vw * 1440 / 1300, 100svh * 1440 / 740);
+    --u: calc(var(--sw) / 1440);
+    position: relative;
+    overflow: hidden;
+    background: var(--paper); /* the sky; html and body are the ground colour (global.css) */
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Portrait screens (phones, upright tablets; canvas draft A "Valley", user 2026-11-18): the width rule above
+     made the scene tiny there (hills in the bottom quarter, figures as specks, the post in the icon row). Instead
+     the scene is sized by the height so the back ridge's crest (scene y 366) sits at 42% from the top and the
+     hills fill the lower ~58%, centred on scene x 1060 (the camp and the signpost's ridge). --sl: the scene box's
+     left edge, also used by the signpost. No figures on these screens (user), the scenery stays. */
+  @media (max-aspect-ratio: 1/1) { /* every window taller than wide, incl. half a 2560x1440 screen (user, 2026-11-18) */
+    .home {
+      --sw: calc(100vh * 1440 / 766);
+      --sw: calc(100svh * 1440 / 766);
+      --sl: calc(50% - var(--sw) * 1060 / 1440);
+    }
+    .home :global(svg.scene) {
+      left: var(--sl);
+      transform: none;
+    }
+    .home :global(svg.scene-front) {
+      display: none;
+    }
+    /* No mist blur on the ridges here: the paths run from scene x -1100 to 2540 (for wide windows), and at this
+       scale on a 3x phone the blurred area outgrows the browser's filter size limit, so the ridges weren't drawn
+       at all on the user's phone (Firefox on the desktop has a higher limit). The blur is only ~2px here anyway. */
+    .home :global(svg.scene [filter]) {
+      filter: none;
+    }
+  }
+
+  .title {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: max(12px, calc(10.2 * var(--u)));
+    /* The name's top sits at scene y 227 (so the gap down to the skier stays as in the reference), but never
+       lower than 28% of the window height (tall windows, where the scene leaves a lot of sky). */
+    padding: min(calc(100vh - 583 * var(--u)), 28vh) clamp(16px, 4vw, 56px) 0;
+    padding-top: min(calc(100svh - 583 * var(--u)), 28svh);
+    /* The title area covers the scene; let hovers through to the figures behind it. */
+    pointer-events: none;
+  }
+  .title > * {
+    pointer-events: auto;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(60px, calc(63.6 * var(--u)), 200px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .tagline {
+    margin: 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(21px, calc(18.2 * var(--u)), 58px);
+    color: var(--ink-soft);
+  }
+</style>

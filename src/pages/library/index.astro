@@ -1,0 +1,727 @@
+---
+// Library: canvas Round 24, B2. A dark bookcase on the desk (cover colour of the Tours notebook), two shelves,
+// no year plates. Books: Round 26 A "tonal cloth" (ridge tones, fine ink), grouped by genre as in Round 37 A "tone runs"
+// (one tone family per genre, the genre name in the dark shelf edge below). Top shelf: the book being read lies flat,
+// a framed ridge picture hangs from a nail in the back panel above it (Round 40 A, static). Bottom shelf:
+// the sunflower (as on the Office cabinet) and the note card for the shown book.
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import { genres, shelves, shelfGenres, readingNow, intro, rowTones, type Book } from '../../data/books';
+
+/** Spine size relative to the sizes in books.ts. */
+const K = 0.92;
+
+const all = [...shelves.flat(), ...readingNow];
+const when = (b: Book) => (b.m === 'reading now' ? 'reading now' : `read ${b.m}`);
+/** Shelves of genre groups, each group newest first. */
+const shelfGroups = shelfGenres.map((gs) => {
+  const groups = gs
+    .map((g) => ({ label: genres[g].label, books: shelves.flat().filter((b) => b.g === g) }))
+    .filter((group) => group.books.length > 0); // genres without books get no label on the shelf
+  const t = rowTones(groups.flatMap((group) => group.books)); // random-looking tones along the whole shelf
+  let k = 0;
+  return groups.map((group) => ({ ...group, books: group.books.map((b) => ({ ...b, tone: t[k++] })) }));
+});
+const notes = Object.fromEntries(
+  all.map((b) => [
+    b.id,
+    { t: b.t, a: b.a, label: when(b), what: b.what },
+  ]),
+);
+// shown until a book is hovered or picked; empty fields are hidden
+notes.intro = { t: intro.t, a: '', label: intro.label, what: intro.what };
+const n = notes.intro;
+---
+
+<Base description="Books read lately, on a bookcase.">
+  <div class="desk">
+    <SiteHeader current="/library/" />
+    <main class="lib">
+      <h1 class="visually-hidden">Library</h1>
+
+      <div class="case-wrap">
+        <div class="case">
+          {
+            shelfGroups.map((groups, i) => (
+              <div class="shelf">
+                <div class="row">
+                  {groups.map((group) => (
+                  <div class="group">
+                  <div class="group-books">
+                  {group.books.map((b) => {
+                    return (
+                      <button
+                        type="button"
+                        class="spine"
+                        data-id={b.id}
+                        aria-pressed="false"
+                        aria-label={`${b.t} by ${b.a}`}
+                        style={`flex:0 0 ${Math.round(b.w * K)}px;width:${Math.round(b.w * K)}px;height:${Math.round(b.h * K)}px;--s:${((Math.round(b.h * K) + 22) / Math.round(b.h * K)).toFixed(4)};--fill:${b.tone}`}
+                      >
+                        <span class="head" />
+                        <span class="head" />
+                        <span class="sp-t">{b.short ?? b.t}</span>
+                        <span class="sp-a">{(b.spineA ? [b.spineA] : b.a.split(' & ').map((n) => n.split(' ').at(-1))).map((n) => <span>{n}</span>)}</span>
+                      </button>
+                    );
+                  })}
+                  </div>
+                    <span class="shelf-label">{group.label}</span>
+                  </div>
+                  ))}
+                  <svg class="bookend" width="40" height="70" viewBox="0 0 40 70" aria-hidden="true" fill="#d9d1c2" stroke="#14171a" stroke-width="1.4" stroke-linejoin="round">
+                    <path d="M2 70 L18 12 L26 30 L31 22 L38 70 Z" />
+                    <path d="M14 26 L18 12 L22 24 L19 22 Z" fill="#fbf8f1" />
+                  </svg>
+                </div>
+
+                {i === 0 ? (
+                  <div class="extras">
+                    {readingNow.length > 0 && (
+                      <div class="pile">
+                        {readingNow.map((b) => (
+                          <button type="button" class="lying" data-id={b.id} aria-pressed="false" aria-label={`Reading now: ${b.t} by ${b.a}`}>
+                            <span class="ly-head" />
+                            <span class="ly-head" />
+                            <span class="ly-t">{b.t}</span>
+                            <span class="ly-a">{b.a.split(' ').at(-1)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div class="hang" aria-hidden="true">
+                      <div class="swing">
+                      <svg class="string" width="170" height="44" viewBox="0 0 170 44">
+                        <path d="M22 44 L85 2 L148 44" />
+                        <circle cx="85" cy="2" r="3.2" />
+                      </svg>
+                      <div class="picture">
+                        <svg viewBox="0 0 200 130" preserveAspectRatio="none">
+                          <rect width="200" height="130" fill="#f7f3eb" />
+                          <circle cx="150" cy="34" r="10" fill="#e9e2d4" />
+                          <path d="M0 70 C30 46 52 60 80 40 C104 24 128 50 160 34 C178 26 190 32 200 30 L200 130 L0 130 Z" fill="#ece6da" />
+                          <path d="M0 92 C40 76 90 98 140 80 C168 72 186 78 200 76 L200 130 L0 130 Z" fill="#e5ded0" />
+                          <path d="M0 112 C50 102 110 120 200 106 L200 130 L0 130 Z" fill="#d9d1c2" />
+                          <path class="birds" d="M40 30 q3 -3 6 0 q3 -3 6 0 M56 24 q2.4 -2.4 4.8 0 q2.4 -2.4 4.8 0" />
+                        </svg>
+                      </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div class="extras extras-low">
+                    <!-- the sunflower in its bottle, the same drawing as on the Office cabinet (no bee here) -->
+                    <svg class="sunflower" width="74" height="152" viewBox="40 0 64 132" aria-hidden="true">
+                <g>
+                <path d="M70 96 C70 70 72 50 74 30" fill="none" stroke="#6f7560" stroke-width="2.2" />
+                <path d="M0 0 C8 -7.8 8 -18.2 0 -26 C-8 -18.2 -8 -7.8 0 0 Z" fill="#a3a68c" stroke="#14171a" stroke-width="1.1" transform="translate(71 70) rotate(-60)" />
+                <path d="M0 0 C7 -6.6 7 -15.4 0 -22 C-7 -15.4 -7 -6.6 0 0 Z" fill="#a3a68c" stroke="#14171a" stroke-width="1.1" transform="translate(72 56) rotate(58)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(0.0 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(25.7 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(51.4 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(77.1 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(102.9 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(128.6 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(154.3 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(180.0 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(205.7 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(231.4 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(257.1 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(282.9 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(308.6 74 28)" />
+                <ellipse cx="74" cy="15" rx="4" ry="9" fill="#d8c9a0" stroke="#14171a" stroke-width="1" transform="rotate(334.3 74 28)" />
+                <circle cx="74" cy="28" r="9" fill="#3b3a36" stroke="#14171a" stroke-width="1.3" />
+                <circle cx="71" cy="25" r="1" fill="#9a9488" />
+                <circle cx="77" cy="30" r="1" fill="#9a9488" />
+                <circle cx="74" cy="32" r="1" fill="#9a9488" />
+                </g>
+                <path d="M65 86 L75 86 L75 96 C75 100 84 102 84 110 L84 130 L56 130 L56 110 C56 102 65 100 65 96 Z" fill="#efe8da" fill-opacity="0.8" stroke="#14171a" stroke-width="1.3" />
+                <path d="M57 116 L83 116 L83 129 L57 129 Z" fill="#cfc5b2" fill-opacity="0.6" />
+                <path d="M60 108 L60 124" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+                    </svg>
+                    <article class="note" aria-live="polite">
+                      <span class="tape" />
+                      <span class="meta label">{n.label}</span>
+                      <h2>{n.t}</h2>
+                      <span class="by">{n.a}</span>
+                      <p class="what">{n.what}</p>
+                    </article>
+                  </div>
+                )}
+              </div>
+            ))
+          }
+        </div>
+      </div>
+      <!-- scale the bookcase (up or down) so it nearly fills the room below the header: one zoom factor for
+           its 1100px design size, set by whichever of width and height runs out first; inline so it runs
+           before first paint -->
+      <script is:inline>
+        (() => {
+          const wrap = document.querySelector('.case-wrap');
+          const main = document.querySelector('.lib');
+          const header = document.querySelector('.site-header');
+          if (!wrap || !main || !header) return;
+          // phones and short landscape windows get the narrow case of cubbies instead (see the CSS), unzoomed
+          const narrow = window.matchMedia('(max-width: 700px), (max-height: 500px)');
+          const fit = () => {
+            wrap.style.zoom = '';
+            if (narrow.matches) return;
+            const cs = getComputedStyle(main);
+            const w = document.documentElement.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            const h = window.innerHeight - header.getBoundingClientRect().bottom - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+            const z = Math.max(0.5, Math.min(w / wrap.offsetWidth, h / wrap.offsetHeight));
+            wrap.style.zoom = Math.abs(z - 1) > 0.005 ? String(z) : '';
+          };
+          fit();
+          window.addEventListener('resize', fit);
+        })();
+      </script>
+    </main>
+  </div>
+  <script type="application/json" id="book-notes" set:html={JSON.stringify(notes)} />
+</Base>
+
+<script>
+  const notes = JSON.parse(document.getElementById('book-notes')!.textContent!);
+  const note = document.querySelector<HTMLElement>('.note')!;
+  const q = (s: string) => note.querySelector<HTMLElement>(s)!;
+
+  const books = document.querySelectorAll<HTMLButtonElement>('.spine, .lying');
+  // The note shows the hovered (or keyboard-focused) book; when the pointer leaves, it goes back to the picked one.
+  let picked = 'intro'; // no book picked yet: the note shows the intro text
+  let shown = picked;
+  const show = (id: string) => {
+    if (id === shown) return;
+    shown = id;
+    const n = notes[id];
+    q('.label').textContent = n.label;
+    q('h2').textContent = n.t;
+    q('.by').textContent = n.a;
+    q('.what').textContent = n.what;
+  };
+  books.forEach((btn) => {
+    const id = btn.dataset.id!;
+    btn.addEventListener('click', () => {
+      picked = id;
+      books.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      show(id);
+      // narrow case: the note sits above the books, so bring it back into view if it is off the screen
+      if (window.matchMedia('(max-width: 700px), (max-height: 500px)').matches) {
+        const r = note.getBoundingClientRect();
+        if (r.top < 0 || r.bottom > window.innerHeight) {
+          const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          note.scrollIntoView({ block: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
+        }
+      }
+    });
+    // keyboard focus only: a mouse click also focuses the button, and that must not pin the note to it
+    btn.addEventListener('focus', () => btn.matches(':focus-visible') && show(id));
+    btn.addEventListener('blur', () => shown === id && show(picked));
+  });
+  // Hover previews only with a real mouse: on touch screens a tap picks the book (click above), and a hover
+  // that browsers synthesise after the note scrolls into view must not swap the note for another book.
+  // One delegated handler instead of pointerenter/leave per book: per-book leave events can get lost (fast
+  // moves, the hovered book growing under the pointer, leaving the window), which left the note stuck on the
+  // last hovered book. pointerover fires on whatever is under the pointer, so the next move always corrects it.
+  const mouse = (e: PointerEvent) => e.pointerType === 'mouse' && window.matchMedia('(hover: hover)').matches;
+  document.addEventListener('pointerover', (e) => {
+    if (!mouse(e)) return;
+    const book = e.target instanceof Element ? e.target.closest<HTMLElement>('.spine, .lying') : null;
+    show(book?.dataset.id ?? picked);
+  });
+  // pointer left the window
+  document.addEventListener('pointerout', (e) => mouse(e) && !e.relatedTarget && show(picked));
+</script>
+
+<style>
+  .desk {
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #ddd3c0;
+    display: flex;
+    flex-direction: column;
+  }
+  .lib {
+    flex: 1;
+    padding: 24px clamp(16px, 3vw, 40px) 24px; /* the fit script keeps the case inside these paddings */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* tall windows (case fitted to the width): centred in the room below the header */
+  }
+  /* page title for screen readers only; the header already marks Library as current */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* the bookcase: same dark cover colour as the Tours notebook */
+  .case-wrap {
+    /* design size; the fit script zooms it to the window */
+    flex: none;
+    width: 1100px;
+    border-radius: 8px;
+    box-shadow: 0 34px 56px -26px rgba(20, 23, 26, 0.6);
+  }
+  .case {
+    min-width: 900px;
+    background: #3b3a36;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-radius: 8px;
+  }
+  .shelf {
+    position: relative;
+    height: 340px;
+    background: #efe8da;
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 120px, rgba(20, 23, 26, 0.05) 120px 121px),
+      linear-gradient(to bottom, rgba(20, 23, 26, 0.18), rgba(20, 23, 26, 0) 26px);
+    border-radius: 2px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 40px;
+  }
+  .row {
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+  }
+  /* one genre: its books close together, its name set into the dark shelf edge right below */
+  /* books on top, the genre name below in the shelf edge; the group is as wide as the wider of the two,
+     so a short group (one book) never lets its label run into the next one */
+  .group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: -13px;
+  }
+  /* the last group has no neighbour: its label may run on under the bookend, so the bookend stays next to the books */
+  .group:last-of-type {
+    padding-bottom: 13px; /* the label's room, kept although the label is out of the flow */
+  }
+  .group:last-of-type .shelf-label {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+  }
+  .group-books {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .shelf-label {
+    position: relative;
+    height: 13px;
+    padding-top: 1px;
+    box-sizing: border-box;
+    font-size: 8.5px;
+    line-height: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #d9d1c2;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .bookend {
+    flex: 0 0 auto;
+    margin-left: -16px; /* 6px after the last book, against the row's 22px group gap */
+  }
+
+  /* tonal cloth: each book its own ridge tone, fine ink outline */
+  .spine {
+    padding: 0;
+    border: 1px solid var(--ink);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    background: var(--fill);
+    color: var(--ink);
+    font: inherit;
+    cursor: default; /* hover already shows the book; a hand promised more than a click does (user, 2026-11-17) */
+    transform-origin: bottom;
+    transition: transform 260ms ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  /* hovered: the whole book stretches 22px up out of the row (--s per book), its foot stays on the board, same
+     colour. The picked book stays put (the note card shows which one it is), so hovering it moves it too. */
+  .spine:hover,
+  .spine:focus-visible {
+    transform: scaleY(var(--s));
+  }
+  /* two thin rules at the head of the spine */
+  .head {
+    width: 64%;
+    border-top: 1px solid rgba(20, 23, 26, 0.55);
+    margin-top: 3px;
+    flex: 0 0 auto;
+  }
+  .head:first-child {
+    margin-top: 16px;
+  }
+  /* title and author's surname on the spine, read top to bottom like English spines */
+  .sp-t,
+  .sp-a {
+    writing-mode: vertical-rl;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  /* a title too long for one line wraps into a second column, as on a real spine */
+  .sp-t {
+    white-space: normal;
+    line-height: 1.15;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 12px;
+    font-family: var(--serif);
+    font-size: 16px;
+  }
+  /* one line per author: several surnames stand side by side instead of one long line */
+  .sp-a > span {
+    display: block;
+  }
+  .sp-a {
+    flex: 0 0 auto;
+    max-height: 40%;
+    margin: 10px 0 12px;
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  /* the same two thin rules as at the head of the standing spines, here at the left end */
+  .ly-head {
+    align-self: center;
+    height: 64%;
+    border-left: 1px solid rgba(20, 23, 26, 0.55);
+    margin-right: 3px;
+    flex: 0 0 auto;
+  }
+  .ly-head + .ly-head {
+    margin-right: 12px;
+  }
+  .ly-t {
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ly-a {
+    margin-left: auto;
+    padding-left: 10px;
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .extras {
+    display: flex;
+    align-items: flex-end;
+    gap: 34px;
+  }
+  .extras-low {
+    gap: 22px;
+    padding-bottom: 2px;
+    align-self: stretch; /* full shelf height: the sunflower stays on the board, the note hangs from the top */
+  }
+  /* pinned near the top of the shelf, so a longer note grows downwards */
+  .extras-low .note {
+    align-self: flex-start;
+    margin-top: 30px;
+  }
+  /* the books being read lie in a small pile: the first at the bottom, each next one a little narrower and set in */
+  .pile {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+  /* the second book doesn't lie flat on the first: it leans, its left end on the board, resting on the first
+     book's top-left corner --reach px along its underside (past its middle, so it would really stay put).
+     Tilt = asin(46 / reach), 46 = the first book's thickness. */
+  .pile {
+    position: relative;
+  }
+  .pile .lying:nth-child(2) {
+    --reach: 200;
+    --tilt: 13.3deg;
+    --tilt-up: 16.3deg;
+    position: absolute;
+    bottom: 0;
+    left: calc(-1px * sqrt(var(--reach) * var(--reach) - 2116));
+    width: 222px;
+    background: #e2dacb;
+    transform-origin: left bottom;
+    transform: rotate(calc(-1 * var(--tilt)));
+    transition: height 260ms ease, transform 260ms ease;
+  }
+  /* the first book grows 46 -> 56px thick on hover: the leaning one rides up on its corner (asin(56 / reach))
+     instead of sinking into it */
+  .pile:has(.lying:first-child:hover, .lying:first-child:focus-visible) .lying:nth-child(2) {
+    --tilt: var(--tilt-up);
+  }
+  .pile .lying:nth-child(3) {
+    width: 230px;
+    margin-left: 4px;
+  }
+  .lying {
+    position: relative;
+    width: 240px;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    background: #ece6da;
+    color: var(--ink);
+    cursor: default; /* same as .spine */
+    display: flex;
+    align-items: center;
+    font-family: var(--serif);
+    font-size: 20px;
+    transition: height 260ms ease;
+  }
+  /* lying flat it grows thicker instead, still resting on the board */
+  .lying:hover,
+  .lying:focus-visible {
+    height: 56px;
+  }
+  /* the ridge picture hangs on a string from a nail in the back panel, a little crooked. Placed from the right so it stays clear of the books
+     at every case width (900-1100px). */
+  .hang {
+    position: absolute;
+    right: 202px;
+    top: 34px;
+    width: 170px;
+    height: 172px;
+  }
+  /* hangs a little crooked from the nail and stays still: no hover movement (user request, 2026-11-17) */
+  .swing {
+    position: absolute;
+    inset: 0;
+    transform-origin: 85px 2px; /* the nail */
+    transform: rotate(-2deg);
+  }
+  .string {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: visible;
+  }
+  .string path {
+    fill: none;
+    stroke: var(--ink-soft);
+    stroke-width: 1;
+  }
+  .string circle {
+    fill: #3b3a36;
+  }
+  .picture {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    width: 170px;
+    height: 132px;
+    box-sizing: border-box;
+    background: #fbf8f1;
+    border: 6px solid #3b3a36;
+    box-shadow: 0 2px 4px rgba(20, 23, 26, 0.2);
+    overflow: hidden;
+  }
+  .picture svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .picture .birds {
+    fill: none;
+    stroke: var(--ink-soft);
+    stroke-width: 0.9;
+    stroke-linecap: round;
+  }
+  .sunflower {
+    flex: 0 0 auto;
+    overflow: visible;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  /* the note card, standing at the right end of the lower shelf (upright: a tilt pushed one corner through the board) */
+  .note {
+    position: relative;
+    width: 310px;
+    box-sizing: border-box;
+    background: #fbf8f1;
+    border: 1.4px solid var(--ink);
+    padding: 24px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    box-shadow: 4px 6px 10px -4px rgba(20, 23, 26, 0.35);
+  }
+  .tape {
+    position: absolute;
+    left: 50%;
+    top: -9px;
+    width: 64px;
+    height: 18px;
+    margin-left: -32px;
+    background: rgba(226, 210, 168, 0.8);
+    transform: rotate(2deg);
+  }
+  .meta {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .note > :not(.tape):empty {
+    display: none;
+  }
+  .note h2 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 25px;
+    line-height: 1.04;
+  }
+  .by {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .what {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Phones and short landscape windows (the same query as the fit script): zoomed to fit, the 1100px case would
+     shrink to unreadable. Instead it becomes a narrow case of cubbies, one per genre, filled left to right and
+     wrapping (the shelves and rows dissolve via display: contents). Each genre name stays in the dark edge below
+     its cubby. Order (user, 2026-11-18): the note card first, then the reading pile (under the picture), then
+     the genre cubbies. The bookends and the sunflower don't fit and are left out. */
+  @media (max-width: 700px), (max-height: 500px) {
+    .lib {
+      justify-content: flex-start;
+      /* 72px below: the case's shadow reaches ~64px down; with less room the page ended inside the shadow, a
+         darker strip that showed as a seam when scrolling past the end on phones (user, 2026-11-18) */
+      padding: 16px 16px 72px;
+    }
+    .case-wrap {
+      width: 100%;
+      max-width: 440px;
+    }
+    .case {
+      --bz: 0.62; /* book size against the desktop case; small enough that Fiction fits beside Road & travel on a
+                     390px phone (user, 2026-11-18). Below 381px they can't share a row anyway: 0.72 there, see below */
+      min-width: 0;
+      padding: 10px 10px 16px; /* bottom 16px like the gaps between cubbies: the last row's genre names (14px) hang
+                                  into this edge and stuck out below a 10px edge (user, 2026-11-18) */
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 16px 10px;
+    }
+    .shelf,
+    .row {
+      display: contents;
+    }
+    .bookend,
+    .sunflower {
+      display: none;
+    }
+    /* every cubby: the same back panel as a shelf */
+    .group,
+    .extras {
+      background: #efe8da;
+      background-image:
+        repeating-linear-gradient(90deg, transparent 0 120px, rgba(20, 23, 26, 0.05) 120px 121px),
+        linear-gradient(to bottom, rgba(20, 23, 26, 0.18), rgba(20, 23, 26, 0) 26px);
+      border-radius: 2px;
+    }
+    .group,
+    .group:last-of-type {
+      flex: 1 1 auto;
+      justify-content: flex-end;
+      margin-bottom: 0;
+      padding: 24px 8px 0;
+    }
+    .group-books {
+      zoom: var(--bz);
+    }
+    /* the label hangs out of the cubby into the dark edge below it */
+    .shelf-label,
+    .group:last-of-type .shelf-label {
+      position: relative;
+      left: auto;
+      bottom: auto;
+      height: 14px;
+      margin-bottom: -14px;
+      font-size: 9.5px;
+      line-height: 13px;
+      letter-spacing: 0.1em;
+    }
+    /* reading pile: full width, under the picture; second, right after the note */
+    .extras {
+      order: -1;
+      flex: 1 1 100%;
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 12px 0;
+    }
+    .hang {
+      position: relative;
+      right: auto;
+      top: auto;
+      zoom: 0.7;
+    }
+    /* the leaning book needs room on the left: shift the pile right so the whole pair stays centred */
+    .pile {
+      zoom: 0.75;
+      margin-left: 175px; /* the lean reaches 153px left, plus its top corner swinging out */
+      padding-top: 64px; /* the raised end stays clear of the picture */
+    }
+    .pile .lying:nth-child(2) {
+      --reach: 160;
+      --tilt: 16.7deg;
+      --tilt-up: 20.5deg;
+    }
+    /* the note card: full width, first of all */
+    .extras-low {
+      order: -2;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0 12px 14px;
+    }
+    .extras-low .note {
+      align-self: stretch;
+      width: auto;
+      margin-top: 22px;
+    }
+  }
+  /* 360px phones: the leaning pair is a little too wide at 0.75; Fiction can't fit beside Road & travel even at
+     0.62, so the books keep their bigger size */
+  @media (max-width: 380px) {
+    .pile {
+      zoom: 0.68;
+    }
+    .case {
+      --bz: 0.72;
+    }
+  }
+</style>

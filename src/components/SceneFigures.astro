@@ -1,0 +1,79 @@
+---
+import Figures from './Figures.astro';
+// The scene's figures in their own SVG, stacked above the title (but under the signpost), so a figure
+// that passes the name or tagline on some window sizes is drawn in front of the text. Same 1440x810 box
+// and fit as MountainScene, so both layers line up exactly.
+---
+
+<svg
+  class="scene-front"
+  aria-hidden="true"
+  viewBox="0 0 1440 810"
+  preserveAspectRatio="xMidYMax meet"
+>
+  <Figures />
+</svg>
+
+<script is:inline>
+  // Restore one-time figures that already played this visit (data-once, see the hover script below).
+  // Inline and right after the SVG on purpose: it runs while the page is parsed, before the first paint.
+  // From the deferred module script the figures were painted in their start state for a frame or two
+  // (hiker back at the fire, skier standing) before jumping to the end state.
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var nav = performance.getEntriesByType('navigation')[0];
+    var reloaded = nav && nav.type === 'reload';
+    document.querySelectorAll('.figures .fig[data-once]').forEach(function (fig) {
+      var key = 'fig-played:' + fig.dataset.once;
+      try {
+        if (reloaded) { sessionStorage.removeItem(key); return; }
+        if (!sessionStorage.getItem(key)) return;
+      } catch (e) { return; /* storage blocked: the figure replays */ }
+      fig.classList.add('play', 'done');
+      fig.getAnimations({ subtree: true }).forEach(function (a) { try { a.finish(); } catch (e) { /* endless loop */ } });
+    });
+  })();
+</script>
+
+<style>
+  .scene-front {
+    /* same box as .scene in MountainScene */
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: var(--sw);
+    height: calc(var(--sw) * 810 / 1440);
+    transform: translateX(-50%);
+    overflow: visible;
+    color: var(--ink);
+    /* only the figures themselves take hovers (.fig in Figures.astro); text and links stay usable */
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  // Hovering a figure plays its animation once; data-play is the run length in seconds.
+  // A one-time figure (data-once="<key>") stays in its end state for the rest of the visit: going to
+  // another page and back keeps the hiker gone and the skier crashed, only a reload brings them back.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = {
+    set: (k: string) => { try { sessionStorage.setItem(k, '1'); } catch { /* storage blocked: replays */ } },
+  };
+  if (!reducedMotion) {
+    document.querySelectorAll<SVGGElement>('.figures .fig').forEach((fig) => {
+      const seconds = Number(fig.dataset.play ?? 8);
+      const once = 'once' in fig.dataset;
+      const key = `fig-played:${fig.dataset.once}`;
+      // already played this visit: the inline script above has put it in its end state
+      if (once && fig.classList.contains('done')) return;
+      fig.addEventListener('pointerenter', () => {
+        if (fig.classList.contains('play')) return;
+        fig.classList.add('play');
+        if (once) store.set(key);
+        // a one-time figure keeps its end state; .done then stops its hidden looping parts
+        if (once) window.setTimeout(() => fig.classList.add('done'), seconds * 1000 + 100);
+        else window.setTimeout(() => fig.classList.remove('play'), seconds * 1000);
+      });
+    });
+  }
+</script>

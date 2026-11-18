@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kandersteg to the Blüemlisalphütte via Oeschinensee, on foot, 2 days, down the same way (only one way drawn).
+     Drawn after the fact (BRouter hiking-mountain via the lake, Oberbergli and the Hohtürli). Thinned to 20 m. Not a recorded track. -->
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="hand-drawn">
+ <trk>
+  <name>Kandersteg to the Blüemlisalphütte</name>
+  <trkseg>
+   <trkpt lat="46.497823" lon="7.675797"><ele>1174</ele></trkpt>
+   <trkpt lat="46.498115" lon="7.674584"><ele>1171</ele></trkpt>
+   <trkpt lat="46.499009" lon="7.675124"><ele>1170</ele></trkpt>
+   <trkpt lat="46.498014" lon="7.678872"><ele>1183</ele></trkpt>
+   <trkpt lat="46.497264" lon="7.679926"><ele>1189</ele></trkpt>
+   <trkpt lat="46.497062" lon="7.682268"><ele>1199</ele></trkpt>
+   <trkpt lat="46.496287" lon="7.683684"><ele>1211</ele></trkpt>
+   <trkpt lat="46.495958" lon="7.683318"><ele>1209</ele></trkpt>
+   <trkpt lat="46.496035" lon="7.684514"><ele>1218</ele></trkpt>
+   <trkpt lat="46.495252" lon="7.688949"><ele>1256</ele></trkpt>
+   <trkpt lat="46.495551" lon="7.690955"><ele>1276</ele></trkpt>
+   <trkpt lat="46.495136" lon="7.692491"><ele>1296</ele></trkpt>
+   <trkpt lat="46.495347" lon="7.693628"><ele>1321</ele></trkpt>
+   <trkpt lat="46.494930" lon="7.695637"><ele>1354</ele></trkpt>
+   <trkpt lat="46.496903" lon="7.693831"><ele>1398</ele></trkpt>
+   <trkpt lat="46.495762" lon="7.696647"><ele>1436</ele></trkpt>
+   <trkpt lat="46.496629" lon="7.695809"><ele>1456</ele></trkpt>
+   <trkpt lat="46.495651" lon="7.698065"><ele>1480</ele></trkpt>
+   <trkpt lat="46.496135" lon="7.697834"><ele>1495</ele></trkpt>
+   <trkpt lat="46.495458" lon="7.699421"><ele>1500</ele></trkpt>
+   <trkpt lat="46.495756" lon="7.700915"><ele>1504</ele></trkpt>
+   <trkpt lat="46.495168" lon="7.702113"><ele>1501</ele></trkpt>
+   <trkpt lat="46.494400" lon="7.702633"><ele>1510</ele></trkpt>
+   <trkpt lat="46.494322" lon="7.703909"><ele>1528</ele></trkpt>
+   <trkpt lat="46.496426" lon="7.708862"><ele>1574</ele></trkpt>
+   <trkpt lat="46.496108" lon="7.710446"><ele>1582</ele></trkpt>
+   <trkpt lat="46.496644" lon="7.712495"><ele>1590</ele></trkpt>
+   <trkpt lat="46.497279" lon="7.713617"><ele>1594</ele></trkpt>
+   <trkpt lat="46.497532" lon="7.714869"><ele>1587</ele></trkpt>
+   <trkpt lat="46.498332" lon="7.715707"><ele>1584</ele></trkpt>
+   <trkpt lat="46.498626" lon="7.716892"><ele>1588</ele></trkpt>
+   <trkpt lat="46.499198" lon="7.717269"><ele>1591</ele></trkpt>
+   <trkpt lat="46.500202" lon="7.716334"><ele>1588</ele></trkpt>
+   <trkpt lat="46.501153" lon="7.716210"><ele>1585</ele></trkpt>
+   <trkpt lat="46.501961" lon="7.717417"><ele>1596</ele></trkpt>
+   <trkpt lat="46.502537" lon="7.722022"><ele>1675</ele></trkpt>
+   <trkpt lat="46.503210" lon="7.723480"><ele>1702</ele></trkpt>
+   <trkpt lat="46.503528" lon="7.725639"><ele>1685</ele></trkpt>
+   <trkpt lat="46.504684" lon="7.728061"><ele>1718</ele></trkpt>
+   <trkpt lat="46.504923" lon="7.729447"><ele>1725</ele></trkpt>
+   <trkpt lat="46.504745" lon="7.729903"><ele>1728</ele></trkpt>
+   <trkpt lat="46.505766" lon="7.732714"><ele>1778</ele></trkpt>
+   <trkpt lat="46.506148" lon="7.732726"><ele>1788</ele></trkpt>
+   <trkpt lat="46.506182" lon="7.733056"><ele>1796</ele></trkpt>
+   <trkpt lat="46.507152" lon="7.732952"><ele>1826</ele></trkpt>
+   <trkpt lat="46.506825" lon="7.734084"><ele>1853</ele></trkpt>
+   <trkpt lat="46.507948" lon="7.733443"><ele>1884</ele></trkpt>
+   <trkpt lat="46.507669" lon="7.734469"><ele>1939</ele></trkpt>
+   <trkpt lat="46.508246" lon="7.733610"><ele>1921</ele></trkpt>
+   <trkpt lat="46.509013" lon="7.733568"><ele>1954</ele></trkpt>
+   <trkpt lat="46.508779" lon="7.735711"><ele>1984</ele></trkpt>
+   <trkpt lat="46.509547" lon="7.737284"><ele>2001</ele></trkpt>
+   <trkpt lat="46.508341" lon="7.739038"><ele>2022</ele></trkpt>
+   <trkpt lat="46.508589" lon="7.739057"><ele>2027</ele></trkpt>
+   <trkpt lat="46.508186" lon="7.739846"><ele>2046</ele></trkpt>
+   <trkpt lat="46.508291" lon="7.741938"><ele>2072</ele></trkpt>
+   <trkpt lat="46.508916" lon="7.743398"><ele>2112</ele></trkpt>
+   <trkpt lat="46.508835" lon="7.746676"><ele>2172</ele></trkpt>
+   <trkpt lat="46.508438" lon="7.748062"><ele>2208</ele></trkpt>
+   <trkpt lat="46.508785" lon="7.748230"><ele>2226</ele></trkpt>
+   <trkpt lat="46.508053" lon="7.749514"><ele>2265</ele></trkpt>
+   <trkpt lat="46.508658" lon="7.749529"><ele>2286</ele></trkpt>
+   <trkpt lat="46.508281" lon="7.750830"><ele>2320</ele></trkpt>
+   <trkpt lat="46.508741" lon="7.752828"><ele>2360</ele></trkpt>
+   <trkpt lat="46.509780" lon="7.755624"><ele>2400</ele></trkpt>
+   <trkpt lat="46.511092" lon="7.757421"><ele>2440</ele></trkpt>
+   <trkpt lat="46.511122" lon="7.758805"><ele>2474</ele></trkpt>
+   <trkpt lat="46.511638" lon="7.759221"><ele>2496</ele></trkpt>
+   <trkpt lat="46.512497" lon="7.761972"><ele>2515</ele></trkpt>
+   <trkpt lat="46.512481" lon="7.763310"><ele>2540</ele></trkpt>
+   <trkpt lat="46.512205" lon="7.763683"><ele>2549</ele></trkpt>
+   <trkpt lat="46.512223" lon="7.767685"><ele>2680</ele></trkpt>
+   <trkpt lat="46.510902" lon="7.769715"><ele>2750</ele></trkpt>
+   <trkpt lat="46.511132" lon="7.770180"><ele>2774</ele></trkpt>
+   <trkpt lat="46.510105" lon="7.771629"><ele>2835</ele></trkpt>
+  </trkseg>
+ </trk>
+</gpx>

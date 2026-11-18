@@ -1,0 +1,172 @@
+---
+// Crows drifting across the sky on a gusting wind: short bursts of wingbeats between
+// long glides. They start where the mockup draws its four static birds (in
+// MountainScene), which stay as the fallback without JavaScript or with reduced motion.
+---
+
+<canvas class="birds" aria-hidden="true"></canvas>
+
+<style>
+  .birds {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  /*! Bird flight adapted from Marvin Gülhan's webpage, https://github.com/Marff16/webpage (CC BY 4.0). */
+
+  interface Bird {
+    x: number; // screen px
+    y: number;
+    size: number; // half wingspan in scene units (scaled like the SVG scene)
+    speed: number; // scene units per second
+    flap: number; // wingbeat rate
+    phase: number;
+  }
+
+  // The scene is drawn in a 1440x810 box, anchored to the bottom centre (see .home in index.astro).
+  const SCENE_W = 1440;
+  const SCENE_H = 810;
+  // The mockup's four birds: centre x, baseline y and half wingspan, in scene units.
+  const START = [
+    { x: 430, y: 180, size: 10 },
+    { x: 908, y: 150, size: 8 },
+    { x: 978, y: 172, size: 10 },
+    { x: 1198, y: 214, size: 8 },
+  ];
+
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas.birds');
+  const ctx = canvas?.getContext('2d');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (canvas && ctx && !reducedMotion) {
+    document.documentElement.classList.add('live-birds');
+
+    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+    let width = 0;
+    let height = 0;
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const toScreen = (x: number, y: number) => ({ x: offsetX + x * scale, y: offsetY + y * scale });
+
+    // Wind strength at a given x and time. Evaluating it at (t - x / speed) makes each
+    // gust roll across the screen from left to right instead of hitting everywhere at once.
+    function wind(x: number, t: number) {
+      const p = t - x / 420;
+      return 0.55 + 0.32 * Math.sin(p * 0.33) + 0.18 * Math.sin(p * 0.87 + 1.3) + 0.07 * Math.sin(p * 2.1 + 0.4);
+    }
+
+    // A height in the sky that keeps clear of the name and tagline.
+    function skyHeight(pad: number) {
+      const min = 0.1 * height;
+      const max = 0.38 * height;
+      const box = canvas!.getBoundingClientRect();
+      let lo = Infinity;
+      let hi = -Infinity;
+      document.querySelectorAll('.title h1, .title .tagline').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        lo = Math.min(lo, r.top - box.top - pad);
+        hi = Math.max(hi, r.bottom - box.top + pad);
+      });
+      const above = Math.max(0, Math.min(max, lo) - min);
+      const below = Math.max(0, max - Math.max(min, hi));
+      if (above + below === 0) return min;
+      const r = rand(0, above + below);
+      return r < above ? min + r : Math.max(min, hi) + (r - above);
+    }
+
+    function newBird(): Bird {
+      const size = rand(8, 10);
+      return {
+        x: rand(-60, -20) * scale,
+        y: skyHeight(size * scale + 12),
+        size,
+        speed: rand(14, 26),
+        flap: rand(6, 9),
+        phase: rand(0, Math.PI * 2),
+      };
+    }
+
+    function resize() {
+      const oldW = width;
+      const oldH = height;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = canvas!.clientWidth;
+      height = canvas!.clientHeight;
+      canvas!.width = Math.round(width * dpr);
+      canvas!.height = Math.round(height * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // follow the scene's box (MountainScene, sized by --sw on .home); fallback: cover, bottom-anchored
+      const scene = document.querySelector('svg.scene')?.getBoundingClientRect();
+      const box = canvas!.getBoundingClientRect();
+      if (scene && scene.width > 0) {
+        scale = scene.width / SCENE_W;
+        offsetX = scene.left - box.left;
+        offsetY = scene.top - box.top;
+      } else {
+        scale = Math.max(width / SCENE_W, height / SCENE_H);
+        offsetX = (width - SCENE_W * scale) / 2;
+        offsetY = height - SCENE_H * scale;
+      }
+      // Keep each bird where it is on its way across.
+      if (oldW && oldH) {
+        for (const b of birds) {
+          b.x *= width / oldW;
+          b.y *= height / oldH;
+        }
+      }
+    }
+
+    let birds: Bird[] = [];
+    resize();
+    const count = width < 700 ? 2 : START.length;
+    birds = START.slice(0, count).map((s) => ({
+      ...toScreen(s.x, s.y),
+      size: s.size,
+      speed: rand(14, 26),
+      flap: rand(6, 9),
+      phase: rand(0, Math.PI * 2),
+    }));
+
+    function drawBird(b: Bird, dt: number, t: number) {
+      b.x += b.speed * scale * (0.4 + 0.6 * wind(b.x, t)) * dt;
+      b.y += Math.sin(t * 0.5 + b.phase) * 4 * dt;
+      // Bursts of wingbeats between long glides.
+      const glide = Math.max(0, Math.sin(t * 0.45 + b.phase));
+      const s = b.size * scale;
+      const lift = s * (0.2 + 0.35 * Math.sin(t * b.flap + b.phase) * glide);
+      ctx!.moveTo(b.x - s, b.y - lift);
+      ctx!.quadraticCurveTo(b.x - s * 0.45, b.y - s * 0.45, b.x, b.y);
+      ctx!.quadraticCurveTo(b.x + s * 0.45, b.y - s * 0.45, b.x + s, b.y - lift);
+    }
+
+    let last = performance.now();
+    function frame(now: number) {
+      // Clamp the step so birds don't jump after the tab was in the background.
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      const t = now / 1000;
+      ctx!.clearRect(0, 0, width, height);
+      ctx!.beginPath();
+      for (let i = 0; i < birds.length; i++) {
+        if (birds[i].x > width + 40 * scale) birds[i] = newBird();
+        drawBird(birds[i], dt, t);
+      }
+      ctx!.strokeStyle = 'rgba(20, 23, 26, 0.75)';
+      ctx!.lineWidth = 1.5 * scale;
+      ctx!.lineCap = 'round';
+      ctx!.lineJoin = 'round';
+      ctx!.stroke();
+      requestAnimationFrame(frame);
+    }
+
+    new ResizeObserver(resize).observe(canvas);
+    requestAnimationFrame(frame);
+  }
+</script>

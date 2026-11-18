@@ -1,0 +1,47 @@
+---
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import Notebook from '../../components/passes/Notebook.astro';
+---
+
+<Base description="Tours by motorcycle, bicycle, on foot and on skis, in a field notebook.">
+  <div class="desk">
+    <SiteHeader current="/tours/" />
+    <main>
+      <Notebook />
+    </main>
+  </div>
+</Base>
+
+<style>
+  .desk {
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #ddd3c0;
+  }
+  main {
+    box-sizing: border-box;
+    /* 72px below: the notebook's shadow reaches ~64px down; the page must not end inside it (seam on phones) */
+    padding: 8px clamp(16px, 3vw, 40px) 72px;
+  }
+  /* desktop: the book is fitted to the window height (Notebook.astro); keep just its 24px gap below */
+  @media (min-width: 960px) {
+    main {
+      padding-bottom: 23px;
+    }
+  }
+  /* windows taller than wide (e.g. half a 2560x1440 screen): the book is fitted to the width and would sit at the
+     top over a block of empty desk, so it is centred vertically in the room below the header (user, 2026-11-18) */
+  @media (min-width: 960px) and (max-aspect-ratio: 1/1) {
+    .desk {
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+</style>

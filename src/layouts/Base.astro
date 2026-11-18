@@ -1,0 +1,72 @@
+---
+import '../styles/global.css';
+import { person } from '../data/site';
+// The fonts load with font-display: swap, so on every new page the first frame could paint in the fallback
+// fonts and then swap (very visible on the big italic headings, e.g. /office/cv/). Preloading the latin files
+// (the same hashed URLs the @font-face rules use) makes them ready before the first paint.
+import serif from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
+import serifItalic from '@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2?url';
+import inter400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
+import inter500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
+const fonts = [serif, serifItalic, inter400, inter500];
+
+interface Props {
+  description?: string;
+  /** false locks zoom (pinch, Ctrl+wheel, Ctrl +/-): only for the full-screen scene pages (home, 404),
+      which are drawn for one fixed screen and fall apart zoomed. Pages with text to read keep zoom. */
+  zoom?: boolean;
+}
+
+const { description = '', zoom = true } = Astro.props;
+// link previews (WhatsApp, LinkedIn, Signal, ...): absolute URLs on the final domain (site in astro.config.mjs)
+const previewImage = new URL('/preview.jpg', Astro.site).href;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en" class:list={[{ 'no-zoom': !zoom }]}>
+  <head>
+    <meta charset="utf-8" />
+    <!-- scene pages: no pinch zoom on phones (the scene is drawn for one fixed screen; zoomed it falls apart) -->
+    <meta
+      name="viewport"
+      content={zoom ? 'width=device-width, initial-scale=1' : 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'}
+    />
+    <!-- the same tab title on every page (user request): just the name, no section -->
+    <title>{person.name}</title>
+    {description && <meta name="description" content={description} />}
+    <!-- keep the site out of search engines (user request, 2026-11-17; confirmed for publication 2026-11-18: it should NOT show up in search results) -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- link previews (user, 2026-11-18): title "Carl Gadde" and one picture for the whole site, the home scene
+         rendered at 1200x630 with only the name, tagline and hills (public/preview.jpg; re-render if the home page changes a lot) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={person.name} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={previewImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${person.name}, Munich, 519 m above sea level, over misty hills`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- phone browser bars in the colour of the page's top edge: paper on the scene pages, the wall on subpages -->
+    <meta name="theme-color" content={zoom ? '#ddd3c0' : '#f7f3ea'} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {fonts.map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)}
+    {!zoom && <script is:inline>
+      // No zooming on desktop either: trackpad pinch and Ctrl+wheel arrive as wheel events with ctrlKey,
+      // Ctrl/Cmd with + - 0 is the keyboard zoom, and Safari pinches through gesture events. (Zoom from
+      // the browser menu cannot be blocked by a page.)
+      (function () {
+        const stop = (e) => e.preventDefault();
+        window.addEventListener('wheel', (e) => { if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false });
+        window.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0', '_'].includes(e.key)) e.preventDefault();
+        });
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, stop, { passive: false }));
+      })();
+    </script>}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

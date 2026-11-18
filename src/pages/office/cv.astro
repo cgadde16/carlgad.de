@@ -1,0 +1,188 @@
+---
+// The CV page (canvas Round 49, CV page 1): the PDF's pages lie on the desk as paper sheets, with a
+// back link and the download / full-screen links on the left. The sheets are PNGs rendered from the PDF
+// by scripts/cv/render.sh; the PDF itself is the download. Until a PDF is there, one blank sheet stands in.
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+
+const PDF = 'Carl-Gadde-CV.pdf';
+const dir = path.join(process.cwd(), 'public', 'cv');
+const hasPdf = fs.existsSync(path.join(dir, PDF));
+
+// page-1.png, page-2.png, ... with their pixel size from the PNG header (bytes 16-23), so the sheets keep
+// their space while the images load
+const pages = (fs.existsSync(dir) ? fs.readdirSync(dir) : [])
+  .map((f) => ({ f, n: Number(/^page-(\d+)\.png$/.exec(f)?.[1]) }))
+  .filter((p) => p.n > 0)
+  .sort((a, b) => a.n - b.n)
+  .map(({ f, n }) => {
+    const head = fs.readFileSync(path.join(dir, f)).subarray(16, 24);
+    return { src: `/cv/${f}`, n, w: head.readUInt32BE(0), h: head.readUInt32BE(4) };
+  });
+const pdfHref = `/cv/${PDF}`;
+---
+
+<Base description="My CV as a PDF.">
+  <div class="room">
+    <SiteHeader current="/office/" />
+    <main class="cv">
+      <div class="side">
+        <a class="back" href="/office/">← Back to the office</a>
+        <h1>Curriculum vitae</h1>
+        <p class="note">Basically everything from the <a href="/office/">Office</a>, squeezed onto one page. Not as pretty, but it prints.</p>
+        {
+          hasPdf && (
+            <>
+              <p class="meta">PDF · {pages.length} {pages.length === 1 ? 'page' : 'pages'}</p>
+              <div class="actions">
+                <a class="btn primary" href={pdfHref} download={PDF}>Download PDF</a>
+                <a class="btn" href={pdfHref} target="_blank" rel="noopener">Open full screen</a>
+              </div>
+            </>
+          )
+        }
+      </div>
+      <div class="sheets">
+        {
+          pages.length ? (
+            pages.map((p) => (
+              <img
+                class="sheet"
+                src={p.src}
+                width={p.w}
+                height={p.h}
+                alt={`Page ${p.n} of my CV`}
+                loading={p.n === 1 ? 'eager' : 'lazy'}
+                fetchpriority={p.n === 1 ? 'high' : 'auto'}
+                decoding={p.n === 1 ? 'sync' : 'async'}
+              />
+            ))
+          ) : (
+            <div class="sheet blank" />
+          )
+        }
+      </div>
+    </main>
+  </div>
+</Base>
+
+<style>
+  .room {
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #ddd3c0;
+  }
+  .cv {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px clamp(16px, 3vw, 40px) 80px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px 64px;
+    align-items: flex-start;
+  }
+  .side {
+    flex: 0 0 300px;
+    position: sticky;
+    top: 24px;
+  }
+  .back {
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .back:hover {
+    color: var(--ink);
+  }
+  h1 {
+    margin: 28px 0 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(38px, 5vw, 46px);
+    line-height: 1.05;
+    /* one line always: it nearly fills the 300px column, and while the serif loads the wider fallback font
+       would wrap it, then the text below jumps up when the real font arrives */
+    white-space: nowrap;
+  }
+  .note {
+    margin: 14px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .note a {
+    color: inherit;
+  }
+  .meta {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  /* grid: one column as wide as the widest button, so both buttons get the same width */
+  .actions {
+    display: grid;
+    justify-content: start;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 18px;
+    box-sizing: border-box;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    border: 1.4px solid var(--ink);
+    border-radius: 3px;
+    transition: background-color 200ms ease;
+  }
+  .btn:hover {
+    background: #e6dece;
+  }
+  .btn.primary {
+    background: #3b3a36;
+    border-color: #3b3a36;
+    color: #fbf8f1;
+  }
+  .btn.primary:hover {
+    background: #14171a;
+  }
+  .sheets {
+    flex: 1 1 400px;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .sheet {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+    box-shadow:
+      0 30px 50px -28px rgba(20, 23, 26, 0.55),
+      0 0 0 1px rgba(20, 23, 26, 0.08);
+  }
+  .sheet.blank {
+    aspect-ratio: 210 / 297;
+  }
+  @media (max-width: 963px) {
+    .side {
+      position: static;
+      flex-basis: 100%;
+    }
+    .actions {
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+    }
+    .sheets {
+      max-width: none;
+    }
+  }
+</style>

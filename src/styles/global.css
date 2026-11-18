@@ -1,0 +1,74 @@
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+
+:root {
+  --paper: #f7f3ea;
+  --ink: #14171a;
+  --ink-soft: #3c4248;
+  --ink-hover: #5a6066;
+  /* warm cream paper and sand ridges (2026-11-12); ridges, back to front: solid tints (thin ink over paper drifted between bluish and greenish while figures animated) */
+  --ridge-back: #ece6da;
+  --ridge-mid: #e5ded0;
+  --ridge-front: #d9d1c2;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: Inter, system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* scene pages (Base zoom={false}): no pinch or double-tap zoom on touch screens (see Base.astro) */
+html.no-zoom {
+  touch-action: pan-x pan-y;
+  /* Seamless edges on phones (user, 2026-11-18): past the page edge (iOS rubber band, the strip behind Safari's
+     bottom bar) the browser shows the html colour. These scenes run from paper (top) to the front ridge
+     (bottom), and one colour can't match both ends, so: the ground colour, and no bounce, so the top never
+     shows it. */
+  background: var(--ridge-front);
+  overscroll-behavior: none;
+}
+/* ...and the body too: some phone browsers take the colour past the edge (and behind their bars) from the body.
+   The paper sky is painted by the scene container itself (.home on Home, .lost on 404). */
+html.no-zoom body {
+  background: var(--ridge-front);
+  overscroll-behavior: none;
+}
+
+/* Subpages (the ones with the header): always keep room for the scrollbar, so the header and layout don't
+   shift sideways between pages that scroll (Office) and pages that don't. The empty gutter takes the
+   subpages' wall colour. Home and 404 (full-bleed scenes, no header) are left alone. */
+html:has(.site-header) {
+  scrollbar-gutter: stable;
+  background: #ddd3c0;
+}
+/* The body in the wall colour too: some phone browsers paint past the page's end (rubber band, behind their
+   bars) in the body colour, which was still paper there (user saw it at the bottom of Tours, 2026-11-18). */
+html:has(.site-header) body {
+  background: #ddd3c0;
+}
+
+a {
+  color: var(--ink);
+}
+a:hover {
+  color: var(--ink-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

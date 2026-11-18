@@ -1,0 +1,454 @@
+---
+// Base camp (About me): canvas Round 35 A2. The whole page is the inside of the tent: the header on the
+// left wall, the note pegged to a cord on the right wall, the camp table in front of the open door.
+// From 1100px the scene is capped at 144vh wide so the table stays on screen, and the page background
+// continues the wall colour at the sides. Narrower: header above the scene, note below it.
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import TentScene from '../../components/camp/TentScene.astro';
+import { facts, objects, initialFact, photos } from '../../data/camp';
+
+const f = facts[initialFact];
+---
+
+<Base description="About me, inside the tent.">
+  <div class="tent">
+    <div class="topnav"><SiteHeader current="/about/" /></div>
+    <main class="stage">
+      <!-- page title for screen readers only; the header already marks Base camp as current -->
+      <h1 class="visually-hidden">Base camp</h1>
+
+      <TentScene />
+
+      <div class="below">
+        <article class="card" aria-live="polite">
+          <span class="peg" aria-hidden="true"></span>
+          <span class="kick"><span class="dot" style={`background:${f.c}`}></span><span class="obj">{objects[initialFact]}</span></span>
+          <h2>{f.title}</h2>
+          <p class="text">{f.text}</p>
+          <p class="more" hidden={!f.more}>{f.more}</p>
+        </article>
+
+        <!-- camera open: a stack of photos under the note, flicked through with the arrows (canvas Round 46 D) -->
+        <section class="photos" aria-label="Photos from the tours" hidden={initialFact !== 'photo'}>
+          <div class="pile">
+            <span class="back b1" aria-hidden="true"></span>
+            <span class="back b2" aria-hidden="true"></span>
+            <span class="back b3" aria-hidden="true"></span>
+            <figure class="print">
+              <img src={photos[0].src} alt={photos[0].caption} width="800" height="600" />
+              <figcaption>{photos[0].caption}</figcaption>
+            </figure>
+          </div>
+          <div class="flick">
+            <button type="button" class="arrow" data-step="-1" aria-label="Previous photo">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M11 3 L5 9 L11 15" /></svg>
+            </button>
+            <span class="dots">
+              {photos.map((p, i) => (
+                <button type="button" class="pdot" data-i={i} aria-label={`Photo ${i + 1}: ${p.caption}`} aria-current={i === 0 ? 'true' : 'false'}><span /></button>
+              ))}
+            </span>
+            <button type="button" class="arrow" data-step="1" aria-label="Next photo">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M7 3 L13 9 L7 15" /></svg>
+            </button>
+          </div>
+        </section>
+      </div>
+    </main>
+    <!-- tall wide windows: the floor runs on below the centred scene (side edges continue TentScene's floor lines
+         M90 1000 L470 780 ...; they reach the window edges after ~52 units). Zero height on landscape screens. -->
+    <div class="floor-run" aria-hidden="true">
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="xMidYMin meet">
+        <!-- y 0 is a pixel above the scene's bottom (the overlap below): the lines start ~1 unit up their slope -->
+        <path d="M0 0 H91.7 L0 53.1 Z M1440 0 H1348.3 L1440 53.1 Z" fill="var(--wall)" />
+        <path d="M91.7 0 L0 53.1 M1348.3 0 L1440 53.1" fill="none" stroke="#14171a" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </div>
+  </div>
+  <script type="application/json" id="camp-facts" set:html={JSON.stringify({ facts, objects, photos })} />
+</Base>
+
+<script>
+  const { facts, objects, photos } = JSON.parse(document.getElementById('camp-facts')!.textContent!);
+  const card = document.querySelector<HTMLElement>('.tent .card')!;
+  const q = (s: string) => card.querySelector<HTMLElement>(s)!;
+  const hots = document.querySelectorAll<HTMLButtonElement>('.tent .hot');
+
+  hots.forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.k!;
+      const f = facts[k];
+      hots.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      q('.dot').style.background = f.c;
+      q('.obj').textContent = objects[k];
+      q('h2').textContent = f.title;
+      q('.text').textContent = f.text;
+      q('.more').textContent = f.more ?? '';
+      q('.more').hidden = !f.more;
+      if (k === 'photo') preload();
+      gallery.hidden = k !== 'photo';
+    }),
+  );
+
+  // the photo stack: arrows step through it (wrapping round), the dots jump to one photo
+  const tent = document.querySelector<HTMLElement>('.tent')!;
+  const gallery = tent.querySelector<HTMLElement>('.photos')!;
+  const print = gallery.querySelector<HTMLElement>('.print')!;
+  const img = print.querySelector('img')!;
+  const cap = print.querySelector('figcaption')!;
+  const dots = gallery.querySelectorAll<HTMLButtonElement>('.pdot');
+  let cur = 0;
+  // load all photos once the camera is opened, so flicking through doesn't wait for each file
+  let preloaded = false;
+  const preload = () => {
+    if (preloaded) return;
+    preloaded = true;
+    photos.forEach((p: { src: string }) => (new Image().src = p.src));
+  };
+  if (!gallery.hidden) preload();
+  const showPhoto = (i: number) => {
+    cur = (i + photos.length) % photos.length;
+    const p = photos[cur];
+    dots.forEach((d, j) => d.setAttribute('aria-current', String(j === cur)));
+    // swap photo and caption together, once the new photo is decoded (never the old photo with the new caption)
+    const next = new Image();
+    next.src = p.src;
+    next
+      .decode()
+      .catch(() => {})
+      .then(() => {
+        if (photos[cur] !== p) return; // clicked on meanwhile
+        img.src = p.src;
+        img.alt = p.caption;
+        cap.textContent = p.caption;
+        print.classList.remove('flicked');
+        void print.offsetWidth; // restart the little flick animation
+        print.classList.add('flicked');
+      });
+  };
+  gallery.querySelectorAll<HTMLButtonElement>('.arrow').forEach((b) =>
+    b.addEventListener('click', () => showPhoto(cur + Number(b.dataset.step))),
+  );
+  dots.forEach((d) => d.addEventListener('click', () => showPhoto(Number(d.dataset.i))));
+</script>
+
+<style>
+  .tent {
+    --wall: #ddd3c0; /* the paper colour of the other subpages */
+    --floor: #cfc5b2;
+    position: relative;
+    min-height: 100vh;
+    background: var(--wall);
+  }
+  /* Behind the tent: the floor colour, which is what the page ends in below 1100px (the note sits on it). The page
+     height can round up a fraction of a pixel past the tent, and a lighter body showed there as a hairline.
+     (:has(.site-header) so these beat the generic subpage rule in global.css.) */
+  :global(html:has(.site-header):has(.tent)),
+  :global(html:has(.site-header):has(.tent) body) {
+    background: #cfc5b2;
+  }
+  @media (min-width: 1100px) {
+    :global(html:has(.site-header):has(.tent)),
+    :global(html:has(.site-header):has(.tent) body) {
+      background: #ddd3c0; /* wide: the scene ends at the side walls */
+    }
+  }
+  /* Narrow: the floor runs on to the bottom of the page (a phone is taller than scene + note, and the wall colour
+     showed again under the floor). The page starts in the wall colour and ends in the floor colour, so no
+     rubber-band bounce: past either edge the browser would show one colour (user, 2026-11-18). */
+  @media (max-width: 1099px) {
+    .tent {
+      display: flex;
+      flex-direction: column;
+    }
+    .stage,
+    .below {
+      flex: 1;
+    }
+    .stage {
+      display: flex;
+      flex-direction: column;
+    }
+    :global(html:has(.tent)) {
+      overscroll-behavior: none;
+    }
+  }
+  .topnav {
+    position: relative;
+  }
+  .stage {
+    position: relative;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .below {
+    background: var(--floor);
+    padding: 8px 16px 48px;
+  }
+  .card {
+    position: relative;
+    box-sizing: border-box;
+    max-width: 420px;
+    margin: 0 auto;
+    background: #fbf8f1;
+    border: 1.4px solid var(--ink);
+    padding: 24px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    transform: rotate(1deg);
+    box-shadow: 4px 10px 16px -6px rgba(20, 23, 26, 0.45);
+  }
+  .peg {
+    position: absolute;
+    left: 50%;
+    top: -16px;
+    width: 14px;
+    height: 30px;
+    margin-left: -7px;
+    background: #d8c3a0;
+    border: 1.2px solid var(--ink);
+    border-radius: 3px;
+  }
+  .kick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.05;
+  }
+  .text {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.6;
+    white-space: pre-line; /* a note can put items on their own lines with \n (the map) */
+  }
+  .more {
+    margin: 0;
+    padding-top: 9px;
+    border-top: 1px dashed #a39d92;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink-soft);
+  }
+  [hidden] {
+    display: none !important;
+  }
+
+  /* ---------- camera: photo stack ---------- */
+  .photos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding-top: 40px;
+  }
+  .pile {
+    position: relative;
+    width: min(calc(100% - 24px), 360px); /* room for the tilted prints behind */
+  }
+  .back,
+  .print {
+    box-sizing: border-box;
+    background: #fbf8f1;
+    border: 1.2px solid var(--ink);
+  }
+  .back {
+    position: absolute;
+    inset: 0;
+    background: #f3eee4;
+    box-shadow: 2px 4px 8px -4px rgba(20, 23, 26, 0.4);
+  }
+  .b1 { transform: translate(4%, 3%) rotate(6deg); }
+  .b2 { transform: translate(-3%, 2%) rotate(-5deg); }
+  .b3 { transform: translate(1%, 0.5%) rotate(2.5deg); }
+  .print {
+    position: relative;
+    margin: 0;
+    padding: 3.3% 3.3% 0;
+    transform: rotate(-1.5deg);
+    box-shadow: 6px 14px 20px -8px rgba(20, 23, 26, 0.55);
+  }
+  .print img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: 1px solid rgba(20, 23, 26, 0.35);
+  }
+  .print figcaption {
+    padding: 10px 4px 12px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.1;
+    color: var(--ink-soft);
+  }
+  /* a new photo lands on the pile with a small turn */
+  .print.flicked {
+    animation: flick 260ms ease-out;
+  }
+  @keyframes flick {
+    from { transform: translateX(-10px) rotate(-5deg); opacity: 0.4; }
+    to { transform: rotate(-1.5deg); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .print.flicked { animation: none; }
+  }
+  .flick {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .arrow {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.3px solid var(--ink);
+    border-radius: 50%;
+    background: #fbf8f1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .arrow:hover {
+    background: #fff;
+  }
+  .arrow path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .dots {
+    display: flex;
+  }
+  /* 20px hit area around an 8px dot */
+  .pdot {
+    width: 20px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .pdot span {
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1.2px solid var(--ink);
+    border-radius: 50%;
+  }
+  .pdot[aria-current='true'] span {
+    background: var(--ink);
+  }
+
+  .floor-run {
+    display: none;
+  }
+  @media (min-width: 1100px) {
+    /* Wide but tall windows (e.g. half a 2560x1440 screen, user 2026-11-18): the scene is as wide as the window and
+       shorter than it. It is centred vertically (user: not all the way down), the floor running on below it; the
+       lantern's cord (TentScene: M720 0 V300) runs on up to the top of the window. */
+    .tent {
+      display: flex;
+      flex-direction: column;
+    }
+    /* equal flexible space above (this pseudo) and below (the floor run): the scene sits in the middle */
+    .tent::before {
+      content: '';
+      flex: 1;
+    }
+    .stage {
+      flex: none;
+    }
+    .floor-run {
+      display: block;
+      position: relative;
+      flex: 1;
+      width: min(100%, 144vh); /* the scene's width */
+      margin: 0 auto;
+      top: -1px; /* overlap the scene by a pixel (no hairline of wall between the two) without changing the page height */
+      box-shadow: 0 1px 0 var(--floor); /* and fill the pixel this leaves at the bottom */
+      overflow: hidden;
+      background: var(--floor);
+    }
+    .floor-run svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+    }
+    .stage::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: calc(50% - 100% * 0.75 / 1440); /* the cord: x 720 of 1440, 1.5 units wide like in the scene */
+      width: calc(100% * 1.5 / 1440);
+      height: 100vh;
+      background: #14171a;
+    }
+    .topnav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+    }
+    .stage {
+      width: min(100%, 144vh);
+    }
+    /* the right wall: the note on its cord, the photos (camera only) below it, so the left wall stays free */
+    .below {
+      position: absolute;
+      right: 2.5%;
+      top: 26%; /* the note hangs on the cord at y≈260 of the 1000-high scene (scripts/camp/tent.py) */
+      width: 26%;
+      min-width: 300px;
+      padding: 0;
+      background: none;
+      z-index: 2;
+    }
+    .card {
+      max-width: none;
+      margin: 0;
+    }
+    .photos {
+      padding-top: 36px;
+    }
+    .pile {
+      width: 84%;
+    }
+  }
+</style>
