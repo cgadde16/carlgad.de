@@ -5,7 +5,3 @@ My personal website: a mountain scene with signposts that lead to the places whe
 [carlgad.de](https://carlgad.de)
 
 ![The home page: my name over misty hills, figures on the ridges and a signpost to the other pages](docs/screenshot.png)
-
-## Licence
-
-The code is under the [MIT licence](LICENSE). The content (texts, photos, drawings, tour data and the CV) is © Carl Gadde, all rights reserved.
